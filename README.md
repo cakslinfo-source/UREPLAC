@@ -21,6 +21,32 @@ Ista postavitev kot pri aplikaciji `delovne-ure-caks`.
 - Sproten povzetek meseca: ure dela, dnevi dopusta, dnevi bolniške, skupaj ur.
 - Prazniki so v koledarju označeni z vijolično piko (avtomatsko, vključno z veliko nočjo).
 
+**Skupni koledar razpoložljivosti** (zavihek *Kdaj ne morem*)
+
+- Vidijo ga **vse zaposlene in vodja**. Vsaka ima svojo barvo.
+- Vsaka klikne na dan in označi **Cel dan / Dopoldne / Popoldne ne morem**.
+  Razlog se nikjer ne piše in ne prikaže.
+- Napovedan dopust ali bolniška iz evidence se samodejno šteje kot
+  "cel dan ne more" – brez podvajanja vnosa in brez razkritja vrste odsotnosti.
+- Klik na dan pokaže tudi **seznam, kdo lahko dela** za vsako od štirih smen.
+
+**Tedenski urnik** (zavihek *Urnik*)
+
+- Štiri smene na dan: dve dopoldan, dve popoldan. Privzeto
+  **Odpiranje 6–13, Dopoldan 7–14, Popoldan 14–21, Zapiranje 15–22** –
+  ure se spremenijo v *Nastavitvah*.
+- Vodja za vsako polje izbere osebo. V spustnem seznamu so ločeno
+  *Na voljo* in *Ne more ta dan* (če vseeno izbereš tako, se polje obarva rdeče).
+- Gumb **Predlagaj urnik**: najprej razporedi **zaposlene do polne tedenske norme**,
+  študentke pa zapolnijo preostale smene. Nihče ni dvakrat na isti dan, sedmi
+  zaporedni delovni dan se izogiba. Predlog nato ročno popraviš.
+- Sproti šteje **ure na teden po osebi** in opozori, če je zaposlena pod normo
+  (rdeče) ali čez njo (oranžno).
+- **Objavi urnik** – dokler teden ni objavljen, ga zaposlene ne vidijo.
+- **Natisni** – tedenska tabela za na vrata.
+- Zaposlena vidi *Moje smene ta teden* in z gumbom **Dodaj v koledar (.ics)**
+  prenese svoje smene v telefonski koledar (Google/Apple).
+
 **Administrator**
 
 - *Evidenca / izpis* – izbere mesec, obkljuka eno ali več zaposlenih in dobi za vsako
@@ -32,9 +58,11 @@ Ista postavitev kot pri aplikaciji `delovne-ure-caks`.
 - *Pregled meseca* – tabela vse ekipe: vrstica = zaposlena, stolpec = dan v mesecu.
 - *Napovedani dopusti* – seznam vseh napovedanih odsotnosti za naslednje 4 mesece,
   urejen po datumu (za planiranje razporeda).
-- *Zaposleni* – dodajanje, novo geslo, deaktivacija, brisanje.
-- *Nastavitve* – ime lokala, dnevna norma ur (uporabi se za obračun dopusta in
-  bolniške) in menjava administratorskega gesla.
+- *Zaposleni* – dodajanje, **zaposlena / študentka**, barva v koledarju, novo geslo,
+  deaktivacija, brisanje.
+- *Nastavitve* – ime lokala, dnevna norma ur (za obračun dopusta in bolniške),
+  **tedenska norma** zaposlene, **ure vseh štirih smen** in menjava
+  administratorskega gesla.
 
 ---
 
@@ -97,6 +125,8 @@ Aplikacija se potem obnaša kot ikona na telefonu.
 | `lokal:config` | ime lokala, dnevna norma, administratorsko geslo |
 | `lokal:employees` | seznam zaposlenih (ime, geslo, aktivna) |
 | `lokal:entries:<idZaposlene>:<YYYY-MM>` | vnosi enega meseca ene zaposlene + zaklep |
+| `lokal:nemorem:<idZaposlene>:<YYYY-MM>` | dnevi, ko ne more delati (`ves`/`dop`/`pop`) |
+| `lokal:urnik:<YYYY-MM>` | urnik meseca po dnevih in smenah + objavljeni tedni |
 
 Vsaka zaposlena ima svoj ključ za vsak mesec, zato se vnosi različnih zaposlenih ne
 morejo povoziti, tudi če vpisujejo hkrati.

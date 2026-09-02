@@ -26,6 +26,8 @@ export async function GET() {
     return Response.json({
       lokalName: cfg.lokalName,
       dailyNorm: cfg.dailyNorm,
+      weeklyNorm: cfg.weeklyNorm,
+      shifts: cfg.shifts,
       employees,
     });
   } catch (e) {
@@ -45,6 +47,20 @@ export async function PUT(req) {
       next.lokalName = body.lokalName.trim();
     if (Number.isFinite(Number(body.dailyNorm)))
       next.dailyNorm = Math.max(1, Math.min(24, Number(body.dailyNorm)));
+    if (Number.isFinite(Number(body.weeklyNorm)))
+      next.weeklyNorm = Math.max(1, Math.min(60, Number(body.weeklyNorm)));
+    if (Array.isArray(body.shifts) && body.shifts.length) {
+      next.shifts = body.shifts
+        .filter((s) => s && s.key && /^\d{1,2}:\d{2}$/.test(s.start) && /^\d{1,2}:\d{2}$/.test(s.end))
+        .map((s) => ({
+          key: String(s.key).slice(0, 4),
+          label: String(s.label || '').slice(0, 30) || 'Smena',
+          kratko: String(s.kratko || s.label || '').slice(0, 5).toUpperCase(),
+          start: s.start.padStart(5, '0'),
+          end: s.end.padStart(5, '0'),
+          del: s.del === 'pop' ? 'pop' : 'dop',
+        }));
+    }
     if (typeof body.adminPassword === 'string' && body.adminPassword.length >= 4)
       next.adminPassword = body.adminPassword;
     await saveConfig(next);

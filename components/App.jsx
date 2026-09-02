@@ -17,6 +17,8 @@ import {
   monthLabel,
   praznikZa,
 } from '@/lib/datum';
+import { Razpolozljivost, Urnik } from '@/components/Ekipa';
+import { PRIVZETE_SMENE, urSmene, barvaZa, BARVE } from '@/lib/urnik';
 
 const TIPI = [
   { key: 'delo', label: 'Delo' },
@@ -511,6 +513,30 @@ function DopustModal({ onClose, onSave, busy }) {
    ===================================================================== */
 
 function ZaposlenaPogled({ session, config }) {
+  const [tab, setTab] = useState('mesec');
+  return (
+    <div className="wrap">
+      <div className="tabs noprint">
+        {[
+          ['mesec', 'Moje ure'],
+          ['urnik', 'Urnik'],
+          ['razp', 'Kdaj ne morem'],
+        ].map(([k, l]) => (
+          <button key={k} className={tab === k ? 'active' : ''} onClick={() => setTab(k)}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {tab === 'mesec' && <ZaposlenaMesec session={session} config={config} />}
+      {tab === 'urnik' && (
+        <Urnik session={session} config={config} meId={session.empId} isAdmin={false} />
+      )}
+      {tab === 'razp' && <Razpolozljivost session={session} meId={session.empId} />}
+    </div>
+  );
+}
+
+function ZaposlenaMesec({ session, config }) {
   const [month, setMonth] = useState(currentMonthId());
   const [doc, setDoc] = useState({ days: {}, locked: false });
   const [loading, setLoading] = useState(true);
@@ -586,7 +612,7 @@ function ZaposlenaPogled({ session, config }) {
   }
 
   return (
-    <div className="wrap">
+    <>
       <div className="card">
         <div className="monthnav">
           <button onClick={() => setMonth(shiftMonth(month, -1))}>‹</button>
@@ -643,7 +669,7 @@ function ZaposlenaPogled({ session, config }) {
       {dopustOpen && (
         <DopustModal busy={busy} onClose={() => setDopustOpen(false)} onSave={shraniObdobje} />
       )}
-    </div>
+    </>
   );
 }
 
@@ -726,11 +752,13 @@ function EvidencaList({ emp, month, doc, lokalName }) {
    ===================================================================== */
 
 function AdminPogled({ session, config, setConfig }) {
-  const [tab, setTab] = useState('evidenca');
+  const [tab, setTab] = useState('urnik');
   return (
     <div className="wrap">
       <div className="tabs noprint">
         {[
+          ['urnik', 'Urnik'],
+          ['razp', 'Razpoložljivost'],
           ['evidenca', 'Evidenca / izpis'],
           ['pregled', 'Pregled meseca'],
           ['dopusti', 'Napovedani dopusti'],
@@ -742,6 +770,10 @@ function AdminPogled({ session, config, setConfig }) {
           </button>
         ))}
       </div>
+      {tab === 'urnik' && (
+        <Urnik session={session} config={config} meId={null} isAdmin={true} />
+      )}
+      {tab === 'razp' && <Razpolozljivost session={session} meId={null} />}
       {tab === 'evidenca' && <AdminEvidenca session={session} config={config} />}
       {tab === 'pregled' && <AdminPregled session={session} />}
       {tab === 'dopusti' && <AdminDopusti session={session} />}
@@ -1081,6 +1113,7 @@ function AdminZaposleni({ session }) {
   const [pass, setPass] = useState('');
   const [busy, setBusy] = useState(false);
   const [pokaziGesla, setPokažiGesla] = useState(false);
+  const [kind, setKind] = useState('zaposlena');
 
   const load = useCallback(async () => {
     try {
@@ -1100,7 +1133,11 @@ function AdminZaposleni({ session }) {
     setBusy(true);
     setErr('');
     try {
-      await api('/api/employees', { session, method: 'POST', body: { name, password: pass } });
+      await api('/api/employees', {
+        session,
+        method: 'POST',
+        body: { name, password: pass, kind },
+      });
       setName('');
       setPass('');
       setMsg('Zaposlena je dodana.');
@@ -1160,6 +1197,22 @@ function AdminZaposleni({ session }) {
               <input value={pass} onChange={(e) => setPass(e.target.value)} placeholder="npr. ana2026" />
             </label>
           </div>
+          <div className="typegrid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            <button
+              type="button"
+              className={`k-razp ${kind === 'zaposlena' ? 'on' : ''}`}
+              onClick={() => setKind('zaposlena')}
+            >
+              Zaposlena (polni delovnik)
+            </button>
+            <button
+              type="button"
+              className={`k-razp ${kind === 'studentka' ? 'on' : ''}`}
+              onClick={() => setKind('studentka')}
+            >
+              Študentka (zapolni ostalo)
+            </button>
+          </div>
           {err && <div className="err">{err}</div>}
           {msg && <div className="ok">{msg}</div>}
           <button className="btn" disabled={busy || !name || pass.length < 4}>
@@ -1177,16 +1230,38 @@ function AdminZaposleni({ session }) {
         </div>
         <div className="emplist" style={{ marginTop: 12 }}>
           {list.length === 0 && <p className="muted">Še ni dodanih zaposlenih.</p>}
-          {list.map((e) => (
-            <div className="emprow" key={e.id}>
+          {list.map((e, i) => (
+            <div className="emprow" key={e.id} style={{ borderLeft: `5px solid ${e.color || barvaZa(i)}` }}>
               <div>
                 <b style={{ opacity: e.active === false ? 0.5 : 1 }}>{e.name}</b>
                 {e.active === false && <span className="muted"> · neaktivna</span>}
                 <div className="muted">
-                  Geslo: {pokaziGesla ? e.password : '••••••'}
+                  {e.kind === 'studentka' ? 'Študentka' : 'Zaposlena'} · Geslo:{' '}
+                  {pokaziGesla ? e.password : '••••••'}
+                </div>
+                <div className="row" style={{ marginTop: 6, gap: 4 }}>
+                  {BARVE.map((c) => (
+                    <button
+                      key={c}
+                      title="Barva v koledarju"
+                      onClick={() => spremeni(e.id, { color: c })}
+                      className={`swatch ${(e.color || barvaZa(i)) === c ? 'on' : ''}`}
+                      style={{ background: c }}
+                    />
+                  ))}
                 </div>
               </div>
               <div className="row">
+                <button
+                  className="btn sec sm"
+                  onClick={() =>
+                    spremeni(e.id, {
+                      kind: e.kind === 'studentka' ? 'zaposlena' : 'studentka',
+                    })
+                  }
+                >
+                  {e.kind === 'studentka' ? '→ Zaposlena' : '→ Študentka'}
+                </button>
                 <button className="btn sec sm" onClick={() => novoGeslo(e)}>
                   Novo geslo
                 </button>
@@ -1212,19 +1287,38 @@ function AdminNastavitve({ session, config, setConfig }) {
   const [lokalName, setLokalName] = useState(config.lokalName || '');
   const [dailyNorm, setDailyNorm] = useState(String(config.dailyNorm || 8));
   const [adminPassword, setAdminPassword] = useState('');
+  const [weeklyNorm, setWeeklyNorm] = useState(String(config.weeklyNorm || 40));
+  const [shifts, setShifts] = useState(
+    (config.shifts && config.shifts.length ? config.shifts : PRIVZETE_SMENE).map((s) => ({ ...s }))
+  );
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+
+  function setShift(i, patch) {
+    setShifts((prev) => prev.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+  }
 
   async function shrani(e) {
     e.preventDefault();
     setBusy(true);
     setErr('');
     try {
-      const body = { lokalName, dailyNorm: Number(dailyNorm) };
+      const body = {
+        lokalName,
+        dailyNorm: Number(dailyNorm),
+        weeklyNorm: Number(weeklyNorm),
+        shifts,
+      };
       if (adminPassword) body.adminPassword = adminPassword;
       await api('/api/config', { session, method: 'PUT', body });
-      setConfig({ ...config, lokalName, dailyNorm: Number(dailyNorm) });
+      setConfig({
+        ...config,
+        lokalName,
+        dailyNorm: Number(dailyNorm),
+        weeklyNorm: Number(weeklyNorm),
+        shifts,
+      });
       setMsg(
         adminPassword
           ? 'Shranjeno. Geslo administratorja je spremenjeno - ob naslednji prijavi uporabi novega.'
@@ -1259,7 +1353,50 @@ function AdminNastavitve({ session, config, setConfig }) {
           />
         </label>
         <label className="field">
-          <span>Novo geslo administratorja (pusti prazno, ce ga ne spreminjaš)</span>
+          <span>Tedenska norma zaposlene (ur)</span>
+          <input
+            type="number"
+            step="1"
+            min="1"
+            max="60"
+            value={weeklyNorm}
+            onChange={(e) => setWeeklyNorm(e.target.value)}
+          />
+        </label>
+
+        <h3 style={{ marginTop: 18 }}>Smene</h3>
+        <p className="muted" style={{ marginTop: -4 }}>
+          Dve dopoldan in dve popoldan. Prva odpira, zadnja zapira.
+        </p>
+        <div className="shiftedit">
+          {shifts.map((s, i) => (
+            <div className="shiftedit-row" key={s.key || i}>
+              <input
+                value={s.label}
+                onChange={(e) => setShift(i, { label: e.target.value })}
+                placeholder="Ime smene"
+              />
+              <input
+                type="time"
+                value={s.start}
+                onChange={(e) => setShift(i, { start: e.target.value })}
+              />
+              <input
+                type="time"
+                value={s.end}
+                onChange={(e) => setShift(i, { end: e.target.value })}
+              />
+              <select value={s.del} onChange={(e) => setShift(i, { del: e.target.value })}>
+                <option value="dop">Dopoldan</option>
+                <option value="pop">Popoldan</option>
+              </select>
+              <span className="muted">{String(urSmene(s)).replace('.', ',')}h</span>
+            </div>
+          ))}
+        </div>
+
+        <label className="field" style={{ marginTop: 16 }}>
+          <span>Novo geslo administratorja (pusti prazno, če ga ne spreminjaš)</span>
           <input
             type="text"
             value={adminPassword}
@@ -1286,14 +1423,25 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [boot, setBoot] = useState(null);
   const [bootError, setBootError] = useState('');
-  const [config, setConfig] = useState({ lokalName: '', dailyNorm: 8 });
+  const [config, setConfig] = useState({
+    lokalName: '',
+    dailyNorm: 8,
+    weeklyNorm: 40,
+    shifts: PRIVZETE_SMENE,
+  });
 
   const loadBoot = useCallback(async () => {
     setBootError('');
     try {
       const d = await api('/api/config');
       setBoot(d);
-      setConfig({ lokalName: d.lokalName, dailyNorm: d.dailyNorm });
+      setConfig((c) => ({
+        ...c,
+        lokalName: d.lokalName,
+        dailyNorm: d.dailyNorm,
+        weeklyNorm: d.weeklyNorm || c.weeklyNorm,
+        shifts: d.shifts && d.shifts.length ? d.shifts : c.shifts,
+      }));
     } catch (e) {
       setBootError(e.message);
     }
