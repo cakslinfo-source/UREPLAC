@@ -196,6 +196,18 @@ tfoot td { font-weight: 800; background: #f8fafc; }
 .mark.more { background: var(--line) !important; color: var(--muted); font-size: 9px; text-align: center; line-height: 11px; font-style: normal; width: auto; padding: 0 3px; border-radius: 4px; }
 
 .sep { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
+.t-nemorem { background: var(--dopust-soft); color: var(--dopust); }
+
+/* hitri vnos ur */
+.card.quick { border-color: var(--brand); border-width: 2px; }
+.quickrow { display: grid; grid-template-columns: 1.2fr .8fr 1fr auto; gap: 8px; align-items: end; }
+.quickrow label.field { margin-bottom: 10px; }
+@media (max-width: 560px) {
+  .quickrow { grid-template-columns: 1fr 1fr; }
+  .quickrow > .btn { grid-column: 1 / -1; width: 100%; }
+}
+
+.cas { font-size: 10px; color: var(--muted); margin-top: 3px; white-space: nowrap; }
 .typegrid button.k-razp.on { color: var(--brand); background: var(--brand-soft); border-color: currentColor; }
 
 .shiftlist { display: flex; flex-direction: column; gap: 8px; }

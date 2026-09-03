@@ -21,27 +21,42 @@ Ista postavitev kot pri aplikaciji `delovne-ure-caks`.
 - Sproten povzetek meseca: ure dela, dnevi dopusta, dnevi bolniške, skupaj ur.
 - Prazniki so v koledarju označeni z vijolično piko (avtomatsko, vključno z veliko nočjo).
 
-**Skupni koledar razpoložljivosti** (zavihek *Kdaj ne morem*)
+- **Hitri vnos** na vrhu: izbereš dan, vpišeš ure in klikneš *Vpiši* – vnos gre naravnost
+  v koledar, datum pa sam skoči na naslednji dan.
 
-- Vidijo ga **vse zaposlene in vodja**. Vsaka ima svojo barvo.
-- Vsaka klikne na dan in označi **Cel dan / Dopoldne / Popoldne ne morem**.
+**Razpoložljivost** (zavihek *Kdaj ne morem*)
+
+- **Zaposlena vidi in ureja samo sebe** – ne vidi, kdaj ne morejo druge.
+- Klikne na dan in označi **Cel dan / Dopoldne / Popoldne ne morem**.
   Razlog se nikjer ne piše in ne prikaže.
+- **Administrator vidi vso ekipo**, vsako v svoji barvi, in ob kliku na dan
+  seznam, **kdo lahko dela** na kateri smeni.
 - Napovedan dopust ali bolniška iz evidence se samodejno šteje kot
   "cel dan ne more" – brez podvajanja vnosa in brez razkritja vrste odsotnosti.
-- Klik na dan pokaže tudi **seznam, kdo lahko dela** za vsako od štirih smen.
 
 **Tedenski urnik** (zavihek *Urnik*)
 
-- Štiri smene na dan: dve dopoldan, dve popoldan. Privzeto
-  **Odpiranje 6–13, Dopoldan 7–14, Popoldan 14–21, Zapiranje 15–22** –
-  ure se spremenijo v *Nastavitvah*.
+- Štiri smene na dan: dve dopoldan, dve popoldan. Privzete ure:
+
+  | Dan | Odpiranje | Dopoldan | Popoldan | Zapiranje |
+  |---|---|---|---|---|
+  | pon–čet | 6–13 | 7–14 | 14–21 | 15–22 |
+  | pet, sob | 6–13 | 7–14 | 14–21 | **15–23** |
+  | ned | **7–14** | **8–15** | 14–21 | 15–22 |
+
+  Ure se za **vsak dan v tednu posebej** nastavijo v *Nastavitvah*.
+- **Kdor zvečer zapira, naslednje jutro ne odpira.** Predlog urnika tega nikoli
+  ne naredi, pri ročnem vnosu pa se polje obarva rdeče in v spustnem seznamu
+  je oseba pod *Ni priporočeno*.
+- Zaposlena vidi urnik cele ekipe, spodaj pa **samo svoj seštevek ur**.
+  Administrator vidi ure vseh.
 - Vodja za vsako polje izbere osebo. V spustnem seznamu so ločeno
   *Na voljo* in *Ne more ta dan* (če vseeno izbereš tako, se polje obarva rdeče).
 - Gumb **Predlagaj urnik**: najprej razporedi **zaposlene do polne tedenske norme**,
   študentke pa zapolnijo preostale smene. Nihče ni dvakrat na isti dan, sedmi
   zaporedni delovni dan se izogiba. Predlog nato ročno popraviš.
-- Sproti šteje **ure na teden po osebi** in opozori, če je zaposlena pod normo
-  (rdeče) ali čez njo (oranžno).
+- Administratorju sproti šteje **ure na teden po osebi** in opozori, če je zaposlena
+  pod normo (rdeče) ali čez njo (oranžno).
 - **Objavi urnik** – dokler teden ni objavljen, ga zaposlene ne vidijo.
 - **Natisni** – tedenska tabela za na vrata.
 - Zaposlena vidi *Moje smene ta teden* in z gumbom **Dodaj v koledar (.ics)**
@@ -61,8 +76,8 @@ Ista postavitev kot pri aplikaciji `delovne-ure-caks`.
 - *Zaposleni* – dodajanje, **zaposlena / študentka**, barva v koledarju, novo geslo,
   deaktivacija, brisanje.
 - *Nastavitve* – ime lokala, dnevna norma ur (za obračun dopusta in bolniške),
-  **tedenska norma** zaposlene, **ure vseh štirih smen** in menjava
-  administratorskega gesla.
+  **tedenska norma** zaposlene, **ure smen za vsak dan v tednu posebej**
+  (z gumbom *Uporabi te ure za vse dni*) in menjava administratorskega gesla.
 
 ---
 
@@ -151,6 +166,8 @@ uporabno, ni pa primerno za občutljive osebne podatke.
 Kar aplikacija **preverja na strežniku** (in ne le v brskalniku):
 
 - zaposlena lahko bere in piše **samo svoje** vnose;
+- zaposlena dobi z zahtevkom za razpoložljivost **samo svoje** podatke – tuji
+  vnosi nikoli ne zapustijo strežnika;
 - zaklenjenega meseca zaposlena ne more spreminjati;
 - seznam gesel ni nikoli poslan na prijavni zaslon – vidi ga samo administrator.
 

@@ -18,7 +18,13 @@ import {
   praznikZa,
 } from '@/lib/datum';
 import { Razpolozljivost, Urnik } from '@/components/Ekipa';
-import { PRIVZETE_SMENE, urSmene, barvaZa, BARVE } from '@/lib/urnik';
+import {
+  PRIVZETE_SMENE,
+  PRIVZETE_SMENE_PO_DNEVIH,
+  urSmene,
+  barvaZa,
+  BARVE,
+} from '@/lib/urnik';
 
 const TIPI = [
   { key: 'delo', label: 'Delo' },
@@ -531,7 +537,85 @@ function ZaposlenaPogled({ session, config }) {
       {tab === 'urnik' && (
         <Urnik session={session} config={config} meId={session.empId} isAdmin={false} />
       )}
-      {tab === 'razp' && <Razpolozljivost session={session} meId={session.empId} />}
+      {tab === 'razp' && (
+        <Razpolozljivost session={session} meId={session.empId} config={config} />
+      )}
+    </div>
+  );
+}
+
+/* Hitri vnos ur na vrhu - zapiše se naravnost v koledar. */
+function HitriVnos({ dailyNorm, busy, onSave, locked }) {
+  const [date, setDate] = useState(todayId());
+  const [ure, setUre] = useState('');
+  const [tip, setTip] = useState('delo');
+
+  function shrani(e) {
+    e.preventDefault();
+    const h = Number(String(ure).replace(',', '.'));
+    if (tip === 'delo' && !(h > 0)) return;
+    const entry = { t: tip };
+    if (tip === 'delo') entry.h = h;
+    else if (tip !== 'prosto') entry.h = h > 0 ? h : dailyNorm;
+    onSave(date, entry, () => {
+      setUre('');
+      // po shranjevanju skoči na naslednji dan
+      const d = new Date(date + 'T12:00:00');
+      d.setDate(d.getDate() + 1);
+      setDate(dateId(d.getFullYear(), d.getMonth(), d.getDate()));
+    });
+  }
+
+  return (
+    <div className="card quick">
+      <h2 style={{ marginBottom: 8 }}>Hitri vnos</h2>
+      <form onSubmit={shrani}>
+        <div className="quickrow">
+          <label className="field">
+            <span>Dan</span>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>Ure</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={ure}
+              onChange={(e) => setUre(e.target.value)}
+              placeholder={tip === 'delo' ? '8' : String(dailyNorm)}
+              disabled={tip === 'prosto'}
+            />
+          </label>
+          <label className="field">
+            <span>Vrsta</span>
+            <select value={tip} onChange={(e) => setTip(e.target.value)}>
+              <option value="delo">Delo</option>
+              <option value="dopust">Dopust</option>
+              <option value="bolniska">Bolniška</option>
+              <option value="prosto">Prost dan</option>
+            </select>
+          </label>
+          <button
+            className="btn"
+            disabled={busy || locked || (tip === 'delo' && !ure)}
+            style={{ alignSelf: 'end', marginBottom: 10 }}
+          >
+            {busy ? '...' : 'Vpiši'}
+          </button>
+        </div>
+        {tip === 'delo' && (
+          <div className="chips">
+            {[4, 5, 6, 7, 8, 10, 12].map((h) => (
+              <button key={h} type="button" onClick={() => setUre(String(h))}>
+                {h}h
+              </button>
+            ))}
+          </div>
+        )}
+        <p className="muted" style={{ marginTop: 8, marginBottom: 0 }}>
+          Vpis se takoj prenese v koledar spodaj. Datum sam skoči na naslednji dan.
+        </p>
+      </form>
     </div>
   );
 }
@@ -566,22 +650,31 @@ function ZaposlenaMesec({ session, config }) {
     load(month);
   }, [month, load]);
 
-  async function shraniDan(entry) {
+  async function shraniVnos(date, entry, po) {
+    const m = date.slice(0, 7);
     setBusy(true);
     setErr('');
     try {
       const data = await api('/api/entries', {
         session,
         method: 'POST',
-        body: { month, date: pickDate, entry },
+        body: { month: m, date, entry },
       });
-      setDoc({ days: data.days || {}, locked: Boolean(data.locked) });
-      setPickDate(null);
+      if (m === month) setDoc({ days: data.days || {}, locked: Boolean(data.locked) });
+      else {
+        setMsg(`Vpisano v ${monthLabel(m)}.`);
+        setTimeout(() => setMsg(''), 4000);
+      }
+      if (po) po();
     } catch (e) {
       setErr(e.message);
     } finally {
       setBusy(false);
     }
+  }
+
+  async function shraniDan(entry) {
+    await shraniVnos(pickDate, entry, () => setPickDate(null));
   }
 
   async function shraniObdobje(dates, tip, opomba) {
@@ -613,6 +706,12 @@ function ZaposlenaMesec({ session, config }) {
 
   return (
     <>
+      <HitriVnos
+        dailyNorm={config.dailyNorm || 8}
+        busy={busy}
+        locked={doc.locked}
+        onSave={shraniVnos}
+      />
       <div className="card">
         <div className="monthnav">
           <button onClick={() => setMonth(shiftMonth(month, -1))}>‹</button>
@@ -773,7 +872,7 @@ function AdminPogled({ session, config, setConfig }) {
       {tab === 'urnik' && (
         <Urnik session={session} config={config} meId={null} isAdmin={true} />
       )}
-      {tab === 'razp' && <Razpolozljivost session={session} meId={null} />}
+      {tab === 'razp' && <Razpolozljivost session={session} meId={null} config={config} />}
       {tab === 'evidenca' && <AdminEvidenca session={session} config={config} />}
       {tab === 'pregled' && <AdminPregled session={session} />}
       {tab === 'dopusti' && <AdminDopusti session={session} />}
@@ -1288,15 +1387,30 @@ function AdminNastavitve({ session, config, setConfig }) {
   const [dailyNorm, setDailyNorm] = useState(String(config.dailyNorm || 8));
   const [adminPassword, setAdminPassword] = useState('');
   const [weeklyNorm, setWeeklyNorm] = useState(String(config.weeklyNorm || 40));
-  const [shifts, setShifts] = useState(
-    (config.shifts && config.shifts.length ? config.shifts : PRIVZETE_SMENE).map((s) => ({ ...s }))
-  );
+  const [dan, setDan] = useState(0);
+  const [shiftsByDay, setShiftsByDay] = useState(() => {
+    const osnova =
+      Array.isArray(config.shiftsByDay) && config.shiftsByDay.length === 7
+        ? config.shiftsByDay
+        : PRIVZETE_SMENE_PO_DNEVIH;
+    return osnova.map((d) => d.map((s) => ({ ...s })));
+  });
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const shifts = shiftsByDay[dan];
+
   function setShift(i, patch) {
-    setShifts((prev) => prev.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+    setShiftsByDay((prev) =>
+      prev.map((d, di) => (di === dan ? d.map((s, j) => (j === i ? { ...s, ...patch } : s)) : d))
+    );
+  }
+
+  function kopirajVseDni() {
+    setShiftsByDay((prev) => prev.map(() => shifts.map((s) => ({ ...s }))));
+    setMsg('Te ure so prenesene na vse dni v tednu. Ne pozabi shraniti.');
+    setTimeout(() => setMsg(''), 6000);
   }
 
   async function shrani(e) {
@@ -1308,7 +1422,8 @@ function AdminNastavitve({ session, config, setConfig }) {
         lokalName,
         dailyNorm: Number(dailyNorm),
         weeklyNorm: Number(weeklyNorm),
-        shifts,
+        shifts: shiftsByDay[0],
+        shiftsByDay,
       };
       if (adminPassword) body.adminPassword = adminPassword;
       await api('/api/config', { session, method: 'PUT', body });
@@ -1317,7 +1432,8 @@ function AdminNastavitve({ session, config, setConfig }) {
         lokalName,
         dailyNorm: Number(dailyNorm),
         weeklyNorm: Number(weeklyNorm),
-        shifts,
+        shifts: shiftsByDay[0],
+        shiftsByDay,
       });
       setMsg(
         adminPassword
@@ -1364,10 +1480,23 @@ function AdminNastavitve({ session, config, setConfig }) {
           />
         </label>
 
-        <h3 style={{ marginTop: 18 }}>Smene</h3>
+        <h3 style={{ marginTop: 18 }}>Smene po dnevih</h3>
         <p className="muted" style={{ marginTop: -4 }}>
-          Dve dopoldan in dve popoldan. Prva odpira, zadnja zapira.
+          Dve dopoldan in dve popoldan. Prva odpira, zadnja zapira. Ure lahko za vsak dan
+          v tednu nastaviš posebej (npr. petek in sobota dlje, nedelja kasnejši začetek).
         </p>
+        <div className="tabs" style={{ paddingTop: 0 }}>
+          {DNEVI_KRATKO.map((d, i) => (
+            <button
+              key={d}
+              type="button"
+              className={dan === i ? 'active' : ''}
+              onClick={() => setDan(i)}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
         <div className="shiftedit">
           {shifts.map((s, i) => (
             <div className="shiftedit-row" key={s.key || i}>
@@ -1394,6 +1523,9 @@ function AdminNastavitve({ session, config, setConfig }) {
             </div>
           ))}
         </div>
+        <button type="button" className="btn sec sm" style={{ marginTop: 8 }} onClick={kopirajVseDni}>
+          Uporabi te ure za vse dni
+        </button>
 
         <label className="field" style={{ marginTop: 16 }}>
           <span>Novo geslo administratorja (pusti prazno, če ga ne spreminjaš)</span>
@@ -1428,6 +1560,7 @@ export default function App() {
     dailyNorm: 8,
     weeklyNorm: 40,
     shifts: PRIVZETE_SMENE,
+    shiftsByDay: PRIVZETE_SMENE_PO_DNEVIH,
   });
 
   const loadBoot = useCallback(async () => {
@@ -1441,6 +1574,10 @@ export default function App() {
         dailyNorm: d.dailyNorm,
         weeklyNorm: d.weeklyNorm || c.weeklyNorm,
         shifts: d.shifts && d.shifts.length ? d.shifts : c.shifts,
+        shiftsByDay:
+          Array.isArray(d.shiftsByDay) && d.shiftsByDay.length === 7
+            ? d.shiftsByDay
+            : c.shiftsByDay,
       }));
     } catch (e) {
       setBootError(e.message);

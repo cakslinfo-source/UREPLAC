@@ -30,7 +30,9 @@ export async function GET(req) {
       urniki: out,
       employees: employees.map(publicEmployee),
       shifts: auth.cfg.shifts,
+      shiftsByDay: auth.cfg.shiftsByDay,
       weeklyNorm: auth.cfg.weeklyNorm,
+      isAdmin: auth.isAdmin,
     });
   } catch (e) {
     return Response.json({ error: e.message }, { status: 500 });
@@ -47,7 +49,11 @@ export async function POST(req) {
       return Response.json({ error: 'Napačen mesec.' }, { status: 400 });
 
     const doc = await getUrnik(month);
-    const shiftKeys = (auth.cfg.shifts || []).map((s) => s.key);
+    const shiftKeys = Array.from(
+      new Set(
+        [...(auth.cfg.shifts || []), ...(auth.cfg.shiftsByDay || []).flat()].map((s) => s.key)
+      )
+    );
 
     if (body.days && typeof body.days === 'object') {
       for (const [date, dan] of Object.entries(body.days)) {

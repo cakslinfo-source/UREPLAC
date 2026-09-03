@@ -25,7 +25,11 @@ export async function GET(req) {
     if (!month || !/^\d{4}-\d{2}$/.test(month))
       return Response.json({ error: 'Manjka ali napačen mesec.' }, { status: 400 });
 
-    const employees = (await getEmployees()).filter((e) => e.active !== false);
+    // Zaposlena vidi samo svojo razpoložljivost; administrator vidi vse.
+    const vsi = (await getEmployees()).filter((e) => e.active !== false);
+    const employees = auth.isAdmin
+      ? vsi
+      : vsi.filter((e) => e.id === auth.employee.id);
     const nemorem = {};
 
     for (const e of employees) {
@@ -42,7 +46,9 @@ export async function GET(req) {
       month,
       employees: employees.map(publicEmployee),
       nemorem,
+      isAdmin: auth.isAdmin,
       shifts: auth.cfg.shifts,
+      shiftsByDay: auth.cfg.shiftsByDay,
       weeklyNorm: auth.cfg.weeklyNorm,
     });
   } catch (e) {

@@ -17,7 +17,7 @@ import {
   praznikZa,
 } from '@/lib/datum';
 import {
-  smene as smeneIz,
+  smeneZaDan,
   urSmene,
   opisSmene,
   barvaZa,
@@ -28,6 +28,9 @@ import {
   ureVTednu,
   predlagajUrnik,
   jeProsta,
+  krsiPocitek,
+  kljucOdpiranja,
+  kljucZapiranja,
   NEMOREM_LABEL,
   ustvariIcs,
   prenesi,
@@ -68,23 +71,25 @@ function st(n) {
 }
 
 /* =================================================================
-   1. Skupni koledar razpoložljivosti
+   1. Koledar razpoložljivosti
+   Zaposlena vidi in ureja SAMO sebe; administrator vidi vso ekipo.
    ================================================================= */
 
 const IZBIRE = [
-  { key: '', label: 'Lahko delam', opis: 'Ta dan sem na voljo' },
-  { key: 'ves', label: 'Cel dan ne morem', opis: '' },
-  { key: 'dop', label: 'Dopoldne ne morem', opis: 'Popoldne sem na voljo' },
-  { key: 'pop', label: 'Popoldne ne morem', opis: 'Dopoldne sem na voljo' },
+  { key: '', label: 'Lahko delam' },
+  { key: 'ves', label: 'Cel dan ne morem' },
+  { key: 'dop', label: 'Dopoldne ne morem' },
+  { key: 'pop', label: 'Popoldne ne morem' },
 ];
 
-function DanRazpModal({ date, data, meId, onSet, onClose, busy }) {
-  const { employees, nemorem, shifts } = data;
+function DanRazpModal({ date, data, meId, isAdmin, config, onSet, onClose, busy }) {
+  const { employees, nemorem } = data;
   const y = Number(date.slice(0, 4));
   const m0 = Number(date.slice(5, 7)) - 1;
   const d = Number(date.slice(8, 10));
   const praznik = praznikZa(date);
   const moja = meId ? nemorem[meId]?.[date] || '' : null;
+  const dnevneSmene = smeneZaDan(config, date);
 
   return (
     <div className="overlay" onClick={onClose}>
@@ -114,56 +119,58 @@ function DanRazpModal({ date, data, meId, onSet, onClose, busy }) {
               ))}
             </div>
             <p className="muted" style={{ marginTop: 8 }}>
-              Razlogov ni treba pisati - vidi se samo, da ta dan ne moreš.
+              Razloga ni treba pisati - vodja vidi samo, da ta dan ne moreš.
             </p>
-            <hr className="sep" />
           </>
         )}
 
-        <h3 style={{ margin: '0 0 8px' }}>Kdo lahko dela</h3>
-        <div className="shiftlist">
-          {shifts.map((sh) => {
-            const na = employees.filter((e) => jeProsta(e.id, date, sh, nemorem, null));
-            return (
-              <div key={sh.key} className="shiftrow">
-                <div className="shiftname">
-                  <b>{sh.label}</b>
-                  <span className="muted">{opisSmene(sh)}</span>
-                </div>
-                <div className="chipsrow">
-                  {na.length === 0 && <span className="muted">nihče</span>}
-                  {na.map((e) => (
-                    <span
-                      key={e.id}
-                      className="pill"
-                      style={{ background: barvaEmp(e, employees.indexOf(e)) }}
-                    >
-                      {kratkoIme(e.name)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {isAdmin && (
+          <>
+            <h3 style={{ margin: '0 0 8px' }}>Kdo lahko dela</h3>
+            <div className="shiftlist">
+              {dnevneSmene.map((sh) => {
+                const na = employees.filter((e) => jeProsta(e.id, date, sh, nemorem, null));
+                return (
+                  <div key={sh.key} className="shiftrow">
+                    <div className="shiftname">
+                      <b>{sh.label}</b>
+                      <span className="muted">{opisSmene(sh)}</span>
+                    </div>
+                    <div className="chipsrow">
+                      {na.length === 0 && <span className="muted">nihče</span>}
+                      {na.map((e) => (
+                        <span
+                          key={e.id}
+                          className="pill"
+                          style={{ background: barvaEmp(e, employees.indexOf(e)) }}
+                        >
+                          {kratkoIme(e.name)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
-        <h3 style={{ margin: '16px 0 8px' }}>Ta dan ne more</h3>
-        <div className="chipsrow">
-          {employees.filter((e) => nemorem[e.id]?.[date]).length === 0 && (
-            <span className="muted">nihče</span>
-          )}
-          {employees
-            .filter((e) => nemorem[e.id]?.[date])
-            .map((e) => (
-              <span
-                key={e.id}
-                className="pill out"
-                style={{ borderColor: barvaEmp(e, employees.indexOf(e)), color: barvaEmp(e, employees.indexOf(e)) }}
-              >
-                {kratkoIme(e.name)} · {NEMOREM_LABEL[nemorem[e.id][date]].toLowerCase()}
-              </span>
-            ))}
-        </div>
+            <h3 style={{ margin: '16px 0 8px' }}>Ta dan ne more</h3>
+            <div className="chipsrow">
+              {employees.filter((e) => nemorem[e.id]?.[date]).length === 0 && (
+                <span className="muted">nihče</span>
+              )}
+              {employees
+                .filter((e) => nemorem[e.id]?.[date])
+                .map((e) => {
+                  const c = barvaEmp(e, employees.indexOf(e));
+                  return (
+                    <span key={e.id} className="pill out" style={{ borderColor: c, color: c }}>
+                      {kratkoIme(e.name)} · {NEMOREM_LABEL[nemorem[e.id][date]].toLowerCase()}
+                    </span>
+                  );
+                })}
+            </div>
+          </>
+        )}
 
         <button className="btn sec full" style={{ marginTop: 16 }} onClick={onClose}>
           Zapri
@@ -173,7 +180,8 @@ function DanRazpModal({ date, data, meId, onSet, onClose, busy }) {
   );
 }
 
-export function Razpolozljivost({ session, meId }) {
+export function Razpolozljivost({ session, meId, config }) {
+  const isAdmin = Boolean(session?.isAdmin);
   const [month, setMonth] = useState(currentMonthId());
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
@@ -237,8 +245,9 @@ export function Razpolozljivost({ session, meId }) {
       </div>
 
       <p className="muted" style={{ marginTop: 0 }}>
-        Klikni na dan in označi, kdaj <b>ne moreš</b> delati. Vidijo vse zaposlene in vodja
-        - razlog se nikjer ne piše.
+        {isAdmin
+          ? 'Pregled cele ekipe. Klikni na dan in vidiš, kdo lahko dela na kateri smeni.'
+          : 'Klikni na dan in označi, kdaj ne moreš delati. Vidiš samo svoje vnose - razloga ni treba pisati.'}
       </p>
 
       {err && <div className="err">{err}</div>}
@@ -246,16 +255,17 @@ export function Razpolozljivost({ session, meId }) {
 
       {data && (
         <>
-          <div className="legend">
-            {data.employees.map((e, i) => (
-              <span key={e.id} className="leg">
-                <i style={{ background: barvaEmp(e, i) }} />
-                {e.name}
-                {e.kind === 'studentka' ? ' (š)' : ''}
-                {e.id === meId ? ' – jaz' : ''}
-              </span>
-            ))}
-          </div>
+          {isAdmin && (
+            <div className="legend">
+              {data.employees.map((e, i) => (
+                <span key={e.id} className="leg">
+                  <i style={{ background: barvaEmp(e, i) }} />
+                  {e.name}
+                  {e.kind === 'studentka' ? ' (š)' : ''}
+                </span>
+              ))}
+            </div>
+          )}
 
           <div className="calhead">
             {DNEVI_KRATKO.map((d) => (
@@ -284,24 +294,34 @@ export function Razpolozljivost({ session, meId }) {
                 <button key={id} type="button" className={cls} onClick={() => setPick(id)}>
                   <span className="n">{d}</span>
                   {hol && <span className="dot" />}
-                  <span className="marks">
-                    {odsotne.slice(0, 6).map(({ e, idx, v }) => (
-                      <i
-                        key={e.id}
-                        title={`${e.name} – ${NEMOREM_LABEL[v]}`}
-                        className={`mark ${v}`}
-                        style={{ background: barvaEmp(e, idx) }}
-                      />
-                    ))}
-                    {odsotne.length > 6 && <i className="mark more">+</i>}
-                  </span>
+                  {isAdmin ? (
+                    <span className="marks">
+                      {odsotne.slice(0, 6).map(({ e, idx, v }) => (
+                        <i
+                          key={e.id}
+                          title={`${e.name} – ${NEMOREM_LABEL[v]}`}
+                          className={`mark ${v}`}
+                          style={{ background: barvaEmp(e, idx) }}
+                        />
+                      ))}
+                      {odsotne.length > 6 && <i className="mark more">+</i>}
+                    </span>
+                  ) : (
+                    odsotne[0] && (
+                      <span className={`tag t-nemorem`}>
+                        {NEMOREM_LABEL[odsotne[0].v]}
+                      </span>
+                    )
+                  )}
                 </button>
               );
             })}
           </div>
 
           <p className="muted" style={{ marginTop: 10 }}>
-            Polna pikica = cel dan, zgornja polovica = dopoldne, spodnja = popoldne.
+            {isAdmin
+              ? 'Polna pikica = cel dan, zgornja polovica = dopoldne, spodnja = popoldne.'
+              : 'Dnevi brez oznake pomenijo, da si na voljo.'}
           </p>
         </>
       )}
@@ -311,6 +331,8 @@ export function Razpolozljivost({ session, meId }) {
           date={pick}
           data={data}
           meId={meId}
+          isAdmin={isAdmin}
+          config={config}
           busy={busy}
           onSet={nastavi}
           onClose={() => setPick(null)}
@@ -335,11 +357,16 @@ export function Urnik({ session, config, meId, isAdmin }) {
   const [busy, setBusy] = useState(false);
 
   const dni = useMemo(() => dneviTedna(monday), [monday]);
-  const meseci = useMemo(
-    () => Array.from(new Set(dni.map((d) => d.slice(0, 7)))),
-    [dni]
-  );
-  const shifts = smeneIz(config);
+  const meseci = useMemo(() => {
+    // vključi tudi mesec prejšnjega dne - potrebujemo nedeljo prej za
+    // pravilo "kdor zapira, ne odpira"
+    const set = new Set(dni.map((d) => d.slice(0, 7)));
+    const prej = new Date(monday + 'T12:00:00');
+    prej.setDate(prej.getDate() - 1);
+    set.add(dateId(prej.getFullYear(), prej.getMonth(), prej.getDate()).slice(0, 7));
+    return Array.from(set);
+  }, [dni, monday]);
+
   const weeklyNorm = Number(config?.weeklyNorm) || 40;
 
   const load = useCallback(async () => {
@@ -349,26 +376,27 @@ export function Urnik({ session, config, meId, isAdmin }) {
       const u = await api(`/api/urnik?months=${meseci.join(',')}`, { session });
       setUrniki(u.urniki || {});
       setEmployees(u.employees || []);
-      const nm = {};
-      for (const m of meseci) {
-        const r = await api(`/api/nemorem?month=${m}`, { session });
-        for (const [id, map] of Object.entries(r.nemorem || {})) {
-          nm[id] = { ...(nm[id] || {}), ...map };
+      if (isAdmin) {
+        const nm = {};
+        for (const m of meseci) {
+          const r = await api(`/api/nemorem?month=${m}`, { session });
+          for (const [id, map] of Object.entries(r.nemorem || {})) {
+            nm[id] = { ...(nm[id] || {}), ...map };
+          }
         }
+        setNemorem(nm);
       }
-      setNemorem(nm);
     } catch (e) {
       setErr(e.message);
     } finally {
       setLoading(false);
     }
-  }, [session, meseci]);
+  }, [session, meseci, isAdmin]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // Vsi dnevi tedna v eni mapi.
   const days = useMemo(() => {
     const out = {};
     for (const m of meseci) Object.assign(out, urniki[m]?.days || {});
@@ -413,13 +441,15 @@ export function Urnik({ session, config, meId, isAdmin }) {
     const noviDnevi = predlagajUrnik({
       dni,
       employees,
-      shifts,
+      config,
       nemorem,
       evidenca: null,
       weeklyNorm,
       obstojeci: days,
     });
-    await shraniDneve(noviDnevi);
+    const samoTaTeden = {};
+    for (const d of dni) samoTaTeden[d] = noviDnevi[d] || {};
+    await shraniDneve(samoTaTeden);
     setMsg('Predlog je pripravljen. Preglej ga in po potrebi popravi.');
     setTimeout(() => setMsg(''), 6000);
   }
@@ -450,46 +480,58 @@ export function Urnik({ session, config, meId, isAdmin }) {
     }
   }
 
-  function izvoziIcs() {
-    const me = employees.find((e) => e.id === meId);
-    const vnosi = [];
+  const mojeSmene = useMemo(() => {
+    if (!meId) return [];
+    const out = [];
     for (const d of dni) {
-      for (const sh of shifts) {
-        if (days[d]?.[sh.key] === meId)
-          vnosi.push({ date: d, key: sh.key, label: sh.label, start: sh.start, end: sh.end });
+      for (const sh of smeneZaDan(config, d)) {
+        if (days[d]?.[sh.key] === meId) out.push({ date: d, sh });
       }
     }
-    if (vnosi.length === 0) {
+    return out;
+  }, [days, dni, config, meId]);
+
+  function izvoziIcs() {
+    if (mojeSmene.length === 0) {
       alert('Ta teden nimaš vpisanih smen.');
       return;
     }
+    const me = employees.find((e) => e.id === meId);
     const ics = ustvariIcs({
-      vnosi,
+      vnosi: mojeSmene.map(({ date, sh }) => ({
+        date,
+        key: sh.key,
+        label: sh.label,
+        start: sh.start,
+        end: sh.end,
+      })),
       ime: me?.name || 'Urnik',
       lokalName: config?.lokalName || '',
     });
     prenesi(`urnik-${monday}.ics`, ics);
   }
 
-  const mojeSmene = useMemo(() => {
-    if (!meId) return [];
-    const out = [];
-    for (const d of dni) {
-      for (const sh of shifts) {
-        if (days[d]?.[sh.key] === meId) out.push({ date: d, sh });
-      }
-    }
-    return out;
-  }, [days, dni, shifts, meId]);
-
+  // Zaposlena vidi samo svoj seštevek, administrator vse.
   const skupaj = useMemo(() => {
-    return employees.map((e, i) => ({
+    const vidni = isAdmin ? employees : employees.filter((e) => e.id === meId);
+    return vidni.map((e) => ({
       ...e,
-      i,
-      ...ureVTednu(days, dni, e.id, shifts),
+      i: employees.indexOf(e),
+      ...ureVTednu(days, dni, e.id, config),
       norma: e.kind === 'studentka' ? Number(e.weeklyNorm) || 0 : Number(e.weeklyNorm) || weeklyNorm,
     }));
-  }, [employees, days, dni, shifts, weeklyNorm]);
+  }, [employees, days, dni, config, weeklyNorm, isAdmin, meId]);
+
+  // Vrstice tabele: unija ključev smen čez teden, urejena po začetku.
+  const vrstice = useMemo(() => {
+    const map = new Map();
+    for (const d of dni) {
+      for (const sh of smeneZaDan(config, d)) {
+        if (!map.has(sh.key)) map.set(sh.key, sh);
+      }
+    }
+    return Array.from(map.values());
+  }, [dni, config]);
 
   const vidno = isAdmin || objavljen;
 
@@ -562,7 +604,7 @@ export function Urnik({ session, config, meId, isAdmin }) {
               <table className="urnik">
                 <thead>
                   <tr>
-                    <th style={{ minWidth: 120 }}>Smena</th>
+                    <th style={{ minWidth: 110 }}>Smena</th>
                     {dni.map((d) => {
                       const y = Number(d.slice(0, 4));
                       const m0 = Number(d.slice(5, 7)) - 1;
@@ -572,7 +614,9 @@ export function Urnik({ session, config, meId, isAdmin }) {
                         <th key={d} className={hol ? 'hol' : isWeekend(y, m0, dd) ? 'wknd' : ''}>
                           {DNEVI_KRATKO[weekdayIndex(y, m0, dd)]}
                           <br />
-                          <span className="muted">{dd}.{m0 + 1}.</span>
+                          <span className="muted">
+                            {dd}.{m0 + 1}.
+                          </span>
                           {hol && <div className="holname">{hol}</div>}
                         </th>
                       );
@@ -580,18 +624,28 @@ export function Urnik({ session, config, meId, isAdmin }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {shifts.map((sh) => (
-                    <tr key={sh.key}>
+                  {vrstice.map((vrsta) => (
+                    <tr key={vrsta.key}>
                       <td>
-                        <b>{sh.label}</b>
-                        <div className="muted">{opisSmene(sh)} · {st(urSmene(sh))}h</div>
+                        <b>{vrsta.label}</b>
                       </td>
                       {dni.map((d) => {
+                        const dnevne = smeneZaDan(config, d);
+                        const sh = dnevne.find((s) => s.key === vrsta.key);
+                        if (!sh) {
+                          return (
+                            <td key={d} className="cell">
+                              <span className="muted">–</span>
+                            </td>
+                          );
+                        }
                         const val = days[d]?.[sh.key] || '';
                         const emp = employees.find((e) => e.id === val);
                         const idx = emp ? employees.indexOf(emp) : 0;
-                        const konflikt =
-                          emp && !jeProsta(emp.id, d, sh, nemorem, null);
+                        const nePocitek = emp && krsiPocitek(emp.id, d, sh.key, days, config);
+                        const neMore = emp && isAdmin && !jeProsta(emp.id, d, sh, nemorem, null);
+                        const konflikt = nePocitek || neMore;
+
                         if (!isAdmin) {
                           return (
                             <td key={d} className="cell">
@@ -605,20 +659,29 @@ export function Urnik({ session, config, meId, isAdmin }) {
                               ) : (
                                 <span className="muted">–</span>
                               )}
+                              <div className="cas">{opisSmene(sh)}</div>
                             </td>
                           );
                         }
-                        const prosti = employees.filter((e) =>
-                          jeProsta(e.id, d, sh, nemorem, null)
+
+                        const prosti = employees.filter(
+                          (e) =>
+                            jeProsta(e.id, d, sh, nemorem, null) &&
+                            !krsiPocitek(e.id, d, sh.key, days, config)
                         );
-                        const zasedeni = employees.filter(
-                          (e) => !jeProsta(e.id, d, sh, nemorem, null)
-                        );
+                        const zadrzani = employees.filter((e) => !prosti.includes(e));
                         return (
                           <td key={d} className={`cell ${konflikt ? 'konflikt' : ''}`}>
                             <select
                               value={val}
                               disabled={busy}
+                              title={
+                                nePocitek
+                                  ? 'Sinoči je zapirala - zjutraj naj ne odpira.'
+                                  : neMore
+                                  ? 'Ta dan je označila, da ne more.'
+                                  : ''
+                              }
                               style={{
                                 borderLeft: `4px solid ${emp ? barvaEmp(emp, idx) : 'transparent'}`,
                               }}
@@ -633,9 +696,9 @@ export function Urnik({ session, config, meId, isAdmin }) {
                                   </option>
                                 ))}
                               </optgroup>
-                              {zasedeni.length > 0 && (
-                                <optgroup label="Ne more ta dan">
-                                  {zasedeni.map((e) => (
+                              {zadrzani.length > 0 && (
+                                <optgroup label="Ni priporočeno">
+                                  {zadrzani.map((e) => (
                                     <option key={e.id} value={e.id}>
                                       {e.name} ⚠
                                     </option>
@@ -643,6 +706,7 @@ export function Urnik({ session, config, meId, isAdmin }) {
                                 </optgroup>
                               )}
                             </select>
+                            <div className="cas">{opisSmene(sh)}</div>
                           </td>
                         );
                       })}
@@ -653,28 +717,38 @@ export function Urnik({ session, config, meId, isAdmin }) {
             </div>
           </div>
 
-          <h3 style={{ marginTop: 20 }}>Ure v tem tednu</h3>
-          <div className="sum" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
-            {skupaj.map((e) => {
-              const pod = e.kind !== 'studentka' && e.norma > 0 && e.ur < e.norma;
-              const cez = e.norma > 0 && e.ur > e.norma;
-              return (
-                <div key={e.id} style={{ borderLeft: `4px solid ${barvaEmp(e, e.i)}` }}>
-                  <b style={{ color: pod ? 'var(--bolniska)' : cez ? 'var(--dopust)' : undefined }}>
-                    {st(e.ur)}h
-                    {e.norma > 0 ? ` / ${st(e.norma)}h` : ''}
-                  </b>
-                  <span>
-                    {e.name}
-                    {e.kind === 'studentka' ? ' · študentka' : ''}
-                    {e.smen ? ` · ${e.smen} smen` : ''}
-                    {pod ? ` · manjka ${st(e.norma - e.ur)}h` : ''}
-                    {cez ? ` · presega za ${st(e.ur - e.norma)}h` : ''}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          {skupaj.length > 0 && (
+            <>
+              <h3 style={{ marginTop: 20 }}>
+                {isAdmin ? 'Ure v tem tednu' : 'Moje ure ta teden'}
+              </h3>
+              <div
+                className="sum"
+                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}
+              >
+                {skupaj.map((e) => {
+                  const pod = e.kind !== 'studentka' && e.norma > 0 && e.ur < e.norma;
+                  const cez = e.norma > 0 && e.ur > e.norma;
+                  return (
+                    <div key={e.id} style={{ borderLeft: `4px solid ${barvaEmp(e, e.i)}` }}>
+                      <b
+                        style={{ color: pod ? 'var(--bolniska)' : cez ? 'var(--dopust)' : undefined }}
+                      >
+                        {st(e.ur)}h{e.norma > 0 ? ` / ${st(e.norma)}h` : ''}
+                      </b>
+                      <span>
+                        {e.name}
+                        {e.kind === 'studentka' ? ' · študentka' : ''}
+                        {e.smen ? ` · ${e.smen} smen` : ''}
+                        {pod ? ` · manjka ${st(e.norma - e.ur)}h` : ''}
+                        {cez ? ` · presega za ${st(e.ur - e.norma)}h` : ''}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           {meId && mojeSmene.length > 0 && (
             <>

@@ -28,6 +28,7 @@ export async function GET() {
       dailyNorm: cfg.dailyNorm,
       weeklyNorm: cfg.weeklyNorm,
       shifts: cfg.shifts,
+      shiftsByDay: cfg.shiftsByDay,
       employees,
     });
   } catch (e) {
@@ -49,8 +50,8 @@ export async function PUT(req) {
       next.dailyNorm = Math.max(1, Math.min(24, Number(body.dailyNorm)));
     if (Number.isFinite(Number(body.weeklyNorm)))
       next.weeklyNorm = Math.max(1, Math.min(60, Number(body.weeklyNorm)));
-    if (Array.isArray(body.shifts) && body.shifts.length) {
-      next.shifts = body.shifts
+    const ocisti = (arr) =>
+      arr
         .filter((s) => s && s.key && /^\d{1,2}:\d{2}$/.test(s.start) && /^\d{1,2}:\d{2}$/.test(s.end))
         .map((s) => ({
           key: String(s.key).slice(0, 4),
@@ -60,6 +61,11 @@ export async function PUT(req) {
           end: s.end.padStart(5, '0'),
           del: s.del === 'pop' ? 'pop' : 'dop',
         }));
+
+    if (Array.isArray(body.shifts) && body.shifts.length) next.shifts = ocisti(body.shifts);
+    if (Array.isArray(body.shiftsByDay) && body.shiftsByDay.length === 7) {
+      const po = body.shiftsByDay.map((dan) => (Array.isArray(dan) ? ocisti(dan) : []));
+      if (po.every((dan) => dan.length)) next.shiftsByDay = po;
     }
     if (typeof body.adminPassword === 'string' && body.adminPassword.length >= 4)
       next.adminPassword = body.adminPassword;
