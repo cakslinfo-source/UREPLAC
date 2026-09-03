@@ -23,6 +23,9 @@ Ista postavitev kot pri aplikaciji `delovne-ure-caks`.
 
 - **Hitri vnos** na vrhu: izbereš dan, vpišeš ure in klikneš *Vpiši* – vnos gre naravnost
   v koledar, datum pa sam skoči na naslednji dan.
+- **Fond ur meseca** (samo za zaposlene, ne za študentke): aplikacija izračuna
+  `delovni dnevi (pon–pet, brez praznikov) × dnevna norma` in primerja z vpisanim.
+  Če ur zmanjka, z rdečo izpiše **koliko ur manjka do polnih ur**.
 
 **Razpoložljivost** (zavihek *Kdaj ne morem*)
 
@@ -76,8 +79,12 @@ Ista postavitev kot pri aplikaciji `delovne-ure-caks`.
 - *Pregled meseca* – tabela vse ekipe: vrstica = zaposlena, stolpec = dan v mesecu.
 - *Napovedani dopusti* – seznam vseh napovedanih odsotnosti za naslednje 4 mesece,
   urejen po datumu (za planiranje razporeda).
-- *Zaposleni* – dodajanje, **zaposlena / študentka**, barva v koledarju, novo geslo,
-  deaktivacija, brisanje.
+- *Zaposleni* – dodajanje, **zaposlena / študentka**, **okence za približno število
+  ur na teden** (pri študentki je to njena kvota, ki jo upošteva predlog urnika;
+  pri zaposleni prazno pomeni privzeto tedensko normo), barva v koledarju,
+  novo geslo, deaktivacija, brisanje.
+- *Evidenca / izpis* in *Pregled meseca* pri vsaki zaposleni prikažeta **fond ur
+  meseca** in z rdečo **manjkajoče ure**; na izpisu je to tudi natisnjeno.
 - *Nastavitve* – ime lokala, dnevna norma ur (za obračun dopusta in bolniške),
   **tedenska norma** zaposlene, **ure smen za vsak dan v tednu posebej**
   (z gumbom *Uporabi te ure za vse dni*) in menjava administratorskega gesla.

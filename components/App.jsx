@@ -16,6 +16,9 @@ import {
   shiftMonth,
   monthLabel,
   praznikZa,
+  mesecniFond,
+  delovniDnevi,
+  prazniciNaDelovniDan,
 } from '@/lib/datum';
 import { Razpolozljivost, Urnik } from '@/components/Ekipa';
 import {
@@ -156,6 +159,8 @@ function Login({ boot, onLogin, bootError, onReload }) {
               empId,
               empPass: password,
               name: data.employee.name,
+              kind: data.employee.kind,
+              weeklyNorm: data.employee.weeklyNorm,
             },
         data.config
       );
@@ -290,6 +295,49 @@ function Koledar({ month, days, onPick, readOnly }) {
       </div>
       <div className="calgrid">{cells}</div>
     </>
+  );
+}
+
+/** Fond ur meseca in primerjava z vpisanim - samo za polni delovni čas. */
+function Fond({ month, days, dailyNorm, studentka }) {
+  if (studentka) return null;
+  const { year, month0 } = parseMonthId(month);
+  const fond = mesecniFond(year, month0, dailyNorm);
+  const s = povzetek(days);
+  const manjka = Math.round((fond - s.skupajUr) * 100) / 100;
+  const prazniki = prazniciNaDelovniDan(year, month0);
+
+  return (
+    <div className={`fond ${manjka > 0 ? 'manjka' : 'ok'}`}>
+      <div className="fondrow">
+        <span>
+          Fond ur za {monthLabel(month).toLowerCase()}:{' '}
+          <b>{stevilo(fond)} h</b>{' '}
+          <span className="muted">
+            ({delovniDnevi(year, month0)} delovnih dni × {stevilo(dailyNorm)} h)
+          </span>
+        </span>
+        <span>
+          Vpisano: <b>{stevilo(s.skupajUr)} h</b>
+        </span>
+      </div>
+      {manjka > 0 ? (
+        <div className="fondmanjka">Manjka še {stevilo(manjka)} ur do polnih ur.</div>
+      ) : (
+        <div className="fondok">
+          Fond je dosežen
+          {manjka < 0 ? ` · ${stevilo(-manjka)} ur nad fondom` : ''}.
+        </div>
+      )}
+      {prazniki.length > 0 && (
+        <div className="muted" style={{ marginTop: 6 }}>
+          Prazniki na delovni dan (v fond niso všteti):{' '}
+          {prazniki
+            .map((p) => `${Number(p.date.slice(8, 10))}. ${p.name.toLowerCase()}`)
+            .join(', ')}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -738,6 +786,12 @@ function ZaposlenaMesec({ session, config }) {
               readOnly={doc.locked}
             />
             <Povzetek days={doc.days} />
+            <Fond
+              month={month}
+              days={doc.days}
+              dailyNorm={config.dailyNorm || 8}
+              studentka={session.kind === 'studentka'}
+            />
             <div className="row" style={{ marginTop: 14 }}>
               <button className="btn sec grow" onClick={() => setDopustOpen(true)}>
                 + Napovej dopust / bolniško vnaprej
@@ -776,10 +830,13 @@ function ZaposlenaMesec({ session, config }) {
    Evidenca za izpis
    ===================================================================== */
 
-function EvidencaList({ emp, month, doc, lokalName }) {
+function EvidencaList({ emp, month, doc, lokalName, dailyNorm = 8 }) {
   const { year, month0 } = parseMonthId(month);
   const total = daysInMonth(year, month0);
   const s = povzetek(doc.days);
+  const studentka = emp.kind === 'studentka';
+  const fond = mesecniFond(year, month0, dailyNorm);
+  const manjka = Math.round((fond - s.skupajUr) * 100) / 100;
   const rows = [];
 
   for (let d = 1; d <= total; d++) {
@@ -807,6 +864,7 @@ function EvidencaList({ emp, month, doc, lokalName }) {
         <div style={{ fontSize: 17, fontWeight: 800 }}>{emp.name}</div>
         <div style={{ fontSize: 13, color: '#64748b' }}>
           Evidenca delovnega časa · {monthLabel(month)}
+          {studentka ? ' · študentka' : ''}
         </div>
       </div>
       <div className="tablewrap">
@@ -838,6 +896,29 @@ function EvidencaList({ emp, month, doc, lokalName }) {
           </tfoot>
         </table>
       </div>
+      {!studentka && (
+        <div className={`fond ${manjka > 0 ? 'manjka' : 'ok'}`} style={{ marginTop: 12 }}>
+          <div className="fondrow">
+            <span>
+              Fond ur: <b>{stevilo(fond)} h</b>{' '}
+              <span className="muted">
+                ({delovniDnevi(year, month0)} delovnih dni × {stevilo(dailyNorm)} h)
+              </span>
+            </span>
+            <span>
+              Vpisano: <b>{stevilo(s.skupajUr)} h</b>
+            </span>
+          </div>
+          {manjka > 0 ? (
+            <div className="fondmanjka">Manjka {stevilo(manjka)} ur do polnih ur.</div>
+          ) : (
+            <div className="fondok">
+              Fond je dosežen{manjka < 0 ? ` · ${stevilo(-manjka)} ur nad fondom` : ''}.
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ marginTop: 22, display: 'flex', gap: 40, fontSize: 12, color: '#64748b' }}>
         <div>Podpis zaposlene: ______________________</div>
         <div>Podpis delodajalca: ______________________</div>
@@ -874,9 +955,9 @@ function AdminPogled({ session, config, setConfig }) {
       )}
       {tab === 'razp' && <Razpolozljivost session={session} meId={null} config={config} />}
       {tab === 'evidenca' && <AdminEvidenca session={session} config={config} />}
-      {tab === 'pregled' && <AdminPregled session={session} />}
+      {tab === 'pregled' && <AdminPregled session={session} config={config} />}
       {tab === 'dopusti' && <AdminDopusti session={session} />}
-      {tab === 'zaposleni' && <AdminZaposleni session={session} />}
+      {tab === 'zaposleni' && <AdminZaposleni session={session} config={config} />}
       {tab === 'nastavitve' && (
         <AdminNastavitve session={session} config={config} setConfig={setConfig} />
       )}
@@ -914,6 +995,8 @@ function AdminEvidenca({ session, config }) {
 
   const employees = data?.employees || [];
   const shown = employees.filter((e) => izbrani.includes(e.id));
+  const { year: leto, month0: mesec0 } = parseMonthId(month);
+  const fondMeseca = mesecniFond(leto, mesec0, config.dailyNorm || 8);
 
   function toggle(id) {
     setIzbrani((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -951,6 +1034,10 @@ function AdminEvidenca({ session, config }) {
           {employees.map((e) => {
             const s = povzetek(data.months[e.id]?.days);
             const locked = data.months[e.id]?.locked;
+            const studentka = e.kind === 'studentka';
+            const manjka = studentka
+              ? 0
+              : Math.round((fondMeseca - s.skupajUr) * 100) / 100;
             return (
               <label key={e.id} className="pick">
                 <input
@@ -960,11 +1047,20 @@ function AdminEvidenca({ session, config }) {
                 />
                 <span>
                   <b>{e.name}</b>
+                  {studentka && <span className="muted"> · študentka</span>}
                   <br />
                   <span className="muted">
-                    {stevilo(s.ureDela)} ur · {s.dniDopusta} dop. · {s.dniBolniske} boln.
+                    {stevilo(s.skupajUr)} ur
+                    {studentka ? '' : ` / ${stevilo(fondMeseca)}`} · {s.dniDopusta} dop. ·{' '}
+                    {s.dniBolniske} boln.
                     {locked ? ' · zaklenjeno' : ''}
                   </span>
+                  {manjka > 0 && (
+                    <>
+                      <br />
+                      <b style={{ color: 'var(--bolniska)' }}>manjka {stevilo(manjka)} ur</b>
+                    </>
+                  )}
                 </span>
               </label>
             );
@@ -1018,6 +1114,7 @@ function AdminEvidenca({ session, config }) {
               month={month}
               doc={data.months[e.id] || { days: {} }}
               lokalName={config.lokalName || ''}
+              dailyNorm={config.dailyNorm || 8}
             />
           ))}
         </div>
@@ -1026,11 +1123,12 @@ function AdminEvidenca({ session, config }) {
   );
 }
 
-function AdminPregled({ session }) {
+function AdminPregled({ session, config }) {
   const [month, setMonth] = useState(currentMonthId());
   const { data, err, loading } = useMesec(session, month);
   const { year, month0 } = parseMonthId(month);
   const total = daysInMonth(year, month0);
+  const fond = mesecniFond(year, month0, config?.dailyNorm || 8);
 
   return (
     <div className="card">
@@ -1065,6 +1163,8 @@ function AdminPregled({ session }) {
                   );
                 })}
                 <th className="num">Ur</th>
+                <th className="num">Fond</th>
+                <th className="num">Manjka</th>
               </tr>
             </thead>
             <tbody>
@@ -1106,7 +1206,19 @@ function AdminPregled({ session }) {
                       );
                     })}
                     <td className="num">
-                      <b>{stevilo(s.ureDela)}</b>
+                      <b>{stevilo(s.skupajUr)}</b>
+                    </td>
+                    <td className="num">
+                      {e.kind === 'studentka' ? '–' : stevilo(fond)}
+                    </td>
+                    <td className="num">
+                      {e.kind === 'studentka' || fond - s.skupajUr <= 0 ? (
+                        ''
+                      ) : (
+                        <b style={{ color: 'var(--bolniska)' }}>
+                          {stevilo(fond - s.skupajUr)}
+                        </b>
+                      )}
                     </td>
                   </tr>
                 );
@@ -1204,7 +1316,51 @@ function AdminDopusti({ session }) {
   );
 }
 
-function AdminZaposleni({ session }) {
+/** Okence za približno število ur na teden (predvsem za študentke). */
+function UrTedenPolje({ emp, weeklyNormDefault, onSave }) {
+  const [v, setV] = useState(emp.weeklyNorm == null ? '' : String(emp.weeklyNorm));
+  const [shranjeno, setShranjeno] = useState(false);
+  const studentka = emp.kind === 'studentka';
+
+  useEffect(() => {
+    setV(emp.weeklyNorm == null ? '' : String(emp.weeklyNorm));
+  }, [emp.weeklyNorm]);
+
+  function commit() {
+    const izvorna = emp.weeklyNorm == null ? '' : String(emp.weeklyNorm);
+    if (v === izvorna) return;
+    onSave(v === '' ? null : Number(String(v).replace(',', '.')));
+    setShranjeno(true);
+    setTimeout(() => setShranjeno(false), 2000);
+  }
+
+  return (
+    <label className="urteden">
+      <span>
+        {studentka ? 'Ur na teden (približno)' : 'Ur na teden'}
+        {shranjeno && <b style={{ color: 'var(--delo)' }}> · shranjeno</b>}
+      </span>
+      <input
+        type="number"
+        step="1"
+        min="0"
+        max="60"
+        value={v}
+        placeholder={studentka ? 'npr. 15' : String(weeklyNormDefault)}
+        onChange={(e) => setV(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            e.currentTarget.blur();
+          }
+        }}
+      />
+    </label>
+  );
+}
+
+function AdminZaposleni({ session, config }) {
   const [list, setList] = useState([]);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
@@ -1338,6 +1494,11 @@ function AdminZaposleni({ session }) {
                   {e.kind === 'studentka' ? 'Študentka' : 'Zaposlena'} · Geslo:{' '}
                   {pokaziGesla ? e.password : '••••••'}
                 </div>
+                <UrTedenPolje
+                  emp={e}
+                  weeklyNormDefault={config?.weeklyNorm || 40}
+                  onSave={(weeklyNorm) => spremeni(e.id, { weeklyNorm })}
+                />
                 <div className="row" style={{ marginTop: 6, gap: 4 }}>
                   {BARVE.map((c) => (
                     <button
