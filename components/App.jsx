@@ -1568,6 +1568,45 @@ function AdminNastavitve({ session, config, setConfig }) {
     );
   }
 
+  function novKljuc(dneveSmene) {
+    const zasedeni = new Set(dneveSmene.map((s) => s.key));
+    for (const c of 'hijklmnrstuvw') if (!zasedeni.has(c)) return c;
+    return 's' + Date.now().toString(36).slice(-3);
+  }
+
+  function dodajSmeno() {
+    setShiftsByDay((prev) =>
+      prev.map((d, di) =>
+        di === dan
+          ? [
+              ...d,
+              {
+                key: novKljuc(d),
+                label: 'Pomoč',
+                kratko: 'POM',
+                start: '09:00',
+                end: '14:00',
+                del: 'dop',
+              },
+            ]
+          : d
+      )
+    );
+  }
+
+  function odstraniSmeno(i) {
+    setShiftsByDay((prev) =>
+      prev.map((d, di) => (di === dan && d.length > 1 ? d.filter((_, j) => j !== i) : d))
+    );
+  }
+
+  function povrniPrivzete() {
+    if (!confirm('Povrniti privzete smene za vse dni v tednu?')) return;
+    setShiftsByDay(PRIVZETE_SMENE_PO_DNEVIH.map((d) => d.map((s) => ({ ...s }))));
+    setMsg('Privzete smene so vrnjene. Ne pozabi shraniti.');
+    setTimeout(() => setMsg(''), 6000);
+  }
+
   function kopirajVseDni() {
     setShiftsByDay((prev) => prev.map(() => shifts.map((s) => ({ ...s }))));
     setMsg('Te ure so prenesene na vse dni v tednu. Ne pozabi shraniti.');
@@ -1681,12 +1720,29 @@ function AdminNastavitve({ session, config, setConfig }) {
                 <option value="pop">Popoldan</option>
               </select>
               <span className="muted">{String(urSmene(s)).replace('.', ',')}h</span>
+              <button
+                type="button"
+                className="btn danger sm"
+                title="Odstrani to smeno"
+                disabled={shifts.length <= 1}
+                onClick={() => odstraniSmeno(i)}
+              >
+                ×
+              </button>
             </div>
           ))}
         </div>
-        <button type="button" className="btn sec sm" style={{ marginTop: 8 }} onClick={kopirajVseDni}>
-          Uporabi te ure za vse dni
-        </button>
+        <div className="row" style={{ marginTop: 8 }}>
+          <button type="button" className="btn sec sm" onClick={dodajSmeno}>
+            + Dodaj smeno na ta dan
+          </button>
+          <button type="button" className="btn sec sm" onClick={kopirajVseDni}>
+            Uporabi te ure za vse dni
+          </button>
+          <button type="button" className="btn sec sm" onClick={povrniPrivzete}>
+            Povrni privzete
+          </button>
+        </div>
 
         <label className="field" style={{ marginTop: 16 }}>
           <span>Novo geslo administratorja (pusti prazno, če ga ne spreminjaš)</span>

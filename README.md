@@ -44,13 +44,17 @@ Ista postavitev kot pri aplikaciji `delovne-ure-caks`.
 
 - Štiri smene na dan: dve dopoldan, dve popoldan. Privzete ure:
 
-  | Dan | Odpiranje | Dopoldan | Popoldan | Zapiranje |
-  |---|---|---|---|---|
-  | pon–čet | 6–13 | 7–14 | 14–21 | 15–22 |
-  | pet, sob | 6–13 | 7–14 | 14–21 | **15–23** |
-  | ned | **7–14** | **8–15** | 14–21 | 15–22 |
+  | Dan | Odpiranje | Dopoldan | Popoldan | Zapiranje | Pomoč |
+  |---|---|---|---|---|---|
+  | pon–čet | 6–13 | 7–14 | 14–21 | 15–22 | – |
+  | pet | 6–13 | 7–14 | 14–21 | **15–23** | – |
+  | sob | 6–13 | 7–14 | 14–21 | **15–23** | **9–14** |
+  | ned | **7–14** | **8–15** | 14–21 | 15–22 | **10–15** |
 
-  Ure se za **vsak dan v tednu posebej** nastavijo v *Nastavitvah*.
+  Vikend ima dopoldne dodatno smeno **Pomoč**. Ure in število smen se za
+  **vsak dan v tednu posebej** nastavijo v *Nastavitvah* – smeno lahko dodaš
+  (*+ Dodaj smeno na ta dan*) ali odstraniš (×), z gumbom *Povrni privzete*
+  pa vrneš zgornjo razporeditev.
 - **Kdor zvečer zapira, naslednje jutro ne odpira.** Predlog urnika tega nikoli
   ne naredi, pri ročnem vnosu pa se polje obarva rdeče in v spustnem seznamu
   je oseba pod *Ni priporočeno*.
