@@ -10,7 +10,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-const VELJAVNE = ['ves', 'dop', 'pop'];
+const VELJAVNE = ['ves', 'dop', 'pop', 'neodpira', 'nezapira'];
 
 /**
  * Skupni koledar razpoložljivosti - vidijo ga vse zaposlene in administrator.

@@ -27,7 +27,10 @@ Ista postavitev kot pri aplikaciji `delovne-ure-caks`.
 **Razpoložljivost** (zavihek *Kdaj ne morem*)
 
 - **Zaposlena vidi in ureja samo sebe** – ne vidi, kdaj ne morejo druge.
-- Klikne na dan in označi **Cel dan / Dopoldne / Popoldne ne morem**.
+- Klikne na dan in izbere eno od petih možnosti:
+  **Cel dan / Dopoldne / Popoldne ne morem**, ali pa
+  **Ne morem odpirat** (blokira samo jutranjo odpiralno smeno) in
+  **Ne morem zaključit** (blokira samo večerno zapiralno smeno).
   Razlog se nikjer ne piše in ne prikaže.
 - **Administrator vidi vso ekipo**, vsako v svoji barvi, in ob kliku na dan
   seznam, **kdo lahko dela** na kateri smeni.
@@ -140,7 +143,7 @@ Aplikacija se potem obnaša kot ikona na telefonu.
 | `lokal:config` | ime lokala, dnevna norma, administratorsko geslo |
 | `lokal:employees` | seznam zaposlenih (ime, geslo, aktivna) |
 | `lokal:entries:<idZaposlene>:<YYYY-MM>` | vnosi enega meseca ene zaposlene + zaklep |
-| `lokal:nemorem:<idZaposlene>:<YYYY-MM>` | dnevi, ko ne more delati (`ves`/`dop`/`pop`) |
+| `lokal:nemorem:<idZaposlene>:<YYYY-MM>` | dnevi, ko ne more delati (`ves`/`dop`/`pop`/`neodpira`/`nezapira`) |
 | `lokal:urnik:<YYYY-MM>` | urnik meseca po dnevih in smenah + objavljeni tedni |
 
 Vsaka zaposlena ima svoj ključ za vsak mesec, zato se vnosi različnih zaposlenih ne

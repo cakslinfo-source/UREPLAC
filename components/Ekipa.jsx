@@ -32,6 +32,7 @@ import {
   kljucOdpiranja,
   kljucZapiranja,
   NEMOREM_LABEL,
+  NEMOREM_KRATKO,
   ustvariIcs,
   prenesi,
 } from '@/lib/urnik';
@@ -80,6 +81,8 @@ const IZBIRE = [
   { key: 'ves', label: 'Cel dan ne morem' },
   { key: 'dop', label: 'Dopoldne ne morem' },
   { key: 'pop', label: 'Popoldne ne morem' },
+  { key: 'neodpira', label: 'Ne morem odpirat' },
+  { key: 'nezapira', label: 'Ne morem zaključit' },
 ];
 
 function DanRazpModal({ date, data, meId, isAdmin, config, onSet, onClose, busy }) {
@@ -129,7 +132,9 @@ function DanRazpModal({ date, data, meId, isAdmin, config, onSet, onClose, busy 
             <h3 style={{ margin: '0 0 8px' }}>Kdo lahko dela</h3>
             <div className="shiftlist">
               {dnevneSmene.map((sh) => {
-                const na = employees.filter((e) => jeProsta(e.id, date, sh, nemorem, null));
+                const na = employees.filter((e) =>
+                  jeProsta(e.id, date, sh, nemorem, null, config)
+                );
                 return (
                   <div key={sh.key} className="shiftrow">
                     <div className="shiftname">
@@ -308,9 +313,7 @@ export function Razpolozljivost({ session, meId, config }) {
                     </span>
                   ) : (
                     odsotne[0] && (
-                      <span className={`tag t-nemorem`}>
-                        {NEMOREM_LABEL[odsotne[0].v]}
-                      </span>
+                      <span className="tag t-nemorem">{NEMOREM_KRATKO[odsotne[0].v]}</span>
                     )
                   )}
                 </button>
@@ -320,7 +323,7 @@ export function Razpolozljivost({ session, meId, config }) {
 
           <p className="muted" style={{ marginTop: 10 }}>
             {isAdmin
-              ? 'Polna pikica = cel dan, zgornja polovica = dopoldne, spodnja = popoldne.'
+              ? 'Polna pikica = cel dan · zgornja polovica = dopoldne · spodnja = popoldne · leva = ne odpira · desna = ne zapira. Miška nad pikico pokaže ime.'
               : 'Dnevi brez oznake pomenijo, da si na voljo.'}
           </p>
         </>
@@ -643,7 +646,8 @@ export function Urnik({ session, config, meId, isAdmin }) {
                         const emp = employees.find((e) => e.id === val);
                         const idx = emp ? employees.indexOf(emp) : 0;
                         const nePocitek = emp && krsiPocitek(emp.id, d, sh.key, days, config);
-                        const neMore = emp && isAdmin && !jeProsta(emp.id, d, sh, nemorem, null);
+                        const neMore =
+                          emp && isAdmin && !jeProsta(emp.id, d, sh, nemorem, null, config);
                         const konflikt = nePocitek || neMore;
 
                         if (!isAdmin) {
@@ -666,7 +670,7 @@ export function Urnik({ session, config, meId, isAdmin }) {
 
                         const prosti = employees.filter(
                           (e) =>
-                            jeProsta(e.id, d, sh, nemorem, null) &&
+                            jeProsta(e.id, d, sh, nemorem, null, config) &&
                             !krsiPocitek(e.id, d, sh.key, days, config)
                         );
                         const zadrzani = employees.filter((e) => !prosti.includes(e));

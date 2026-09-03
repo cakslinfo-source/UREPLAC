@@ -193,6 +193,8 @@ tfoot td { font-weight: 800; background: #f8fafc; }
 .mark { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
 .mark.dop { border-radius: 50%; clip-path: inset(0 0 50% 0); height: 12px; }
 .mark.pop { border-radius: 50%; clip-path: inset(50% 0 0 0); height: 12px; }
+.mark.neodpira { border-radius: 50%; clip-path: inset(0 50% 0 0); width: 12px; }
+.mark.nezapira { border-radius: 50%; clip-path: inset(0 0 0 50%); width: 12px; }
 .mark.more { background: var(--line) !important; color: var(--muted); font-size: 9px; text-align: center; line-height: 11px; font-style: normal; width: auto; padding: 0 3px; border-radius: 4px; }
 
 .sep { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
