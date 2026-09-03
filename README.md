@@ -58,8 +58,15 @@ Ista postavitev kot pri aplikaciji `delovne-ure-caks`.
   Administrator vidi ure vseh.
 - Vodja za vsako polje izbere osebo. V spustnem seznamu so ločeno
   *Na voljo* in *Ne more ta dan* (če vseeno izbereš tako, se polje obarva rdeče).
-- Gumb **Predlagaj urnik**: najprej razporedi **zaposlene do polne tedenske norme**,
-  študentke pa zapolnijo preostale smene. Nihče ni dvakrat na isti dan, sedmi
+- Gumb **Predlagaj urnik** cilja na **mesečni fond, ne na fiksnih 40 h na teden**:
+  vzame fond meseca, odšteje ure, ki so v tem mesecu že razporejene v drugih tednih,
+  ostanek pa razdeli na preostale tedne meseca. Tako se mesec na koncu izide tudi,
+  ko ima mesec 4,4 tedna. Študentke zapolnijo preostale smene do svoje tedenske kvote.
+- **Teden, ki gre čez mejo meseca** (npr. 31. 8.–6. 9.), je pravilno razdeljen: ure se
+  štejejo v mesec, v katerega dan dejansko pade, in vsak mesec ima svoj cilj.
+- V spustnem seznamu pri vsakem imenu piše, **koliko ur ji še ostane do mesečnega fonda**
+  (pri študentkah do tedenske kvote). Seznam je urejen tako, da je zgoraj tista,
+  ki potrebuje največ ur. Nihče ni dvakrat na isti dan, sedmi
   zaporedni delovni dan se izogiba. Predlog nato ročno popraviš.
 - Administratorju sproti šteje **ure na teden po osebi** in opozori, če je zaposlena
   pod normo (rdeče) ali čez njo (oranžno).

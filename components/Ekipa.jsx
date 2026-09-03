@@ -26,6 +26,8 @@ import {
   premakniTeden,
   oznakaTedna,
   ureVTednu,
+  preostanekMeseca,
+  tedniDoKoncaMeseca,
   predlagajUrnik,
   jeProsta,
   krsiPocitek,
@@ -448,6 +450,7 @@ export function Urnik({ session, config, meId, isAdmin }) {
       nemorem,
       evidenca: null,
       weeklyNorm,
+      dailyNorm: Number(config?.dailyNorm) || 8,
       obstojeci: days,
     });
     const samoTaTeden = {};
@@ -524,6 +527,40 @@ export function Urnik({ session, config, meId, isAdmin }) {
       norma: e.kind === 'studentka' ? Number(e.weeklyNorm) || 0 : Number(e.weeklyNorm) || weeklyNorm,
     }));
   }, [employees, days, dni, config, weeklyNorm, isAdmin, meId]);
+
+  // Preostanek mesečnega fonda po osebi in mesecu (za spustni seznam).
+  const preostanki = useMemo(() => {
+    const out = {};
+    const dn = Number(config?.dailyNorm) || 8;
+    for (const m of meseci) {
+      out[m] = {};
+      for (const e of employees) {
+        out[m][e.id] = preostanekMeseca(days, m, e.id, config, dn);
+      }
+    }
+    return out;
+  }, [meseci, employees, days, config]);
+
+  const urTeden = useMemo(() => {
+    const out = {};
+    for (const e of employees) out[e.id] = ureVTednu(days, dni, e.id, config).ur;
+    return out;
+  }, [employees, days, dni, config]);
+
+  /** Besedilo ob imenu v spustnem seznamu: koliko ur ji še ostane. */
+  function opisKandidata(e, mesecDneva) {
+    if (e.kind === 'studentka') {
+      const kvota = e.weeklyNorm == null || e.weeklyNorm === '' ? null : Number(e.weeklyNorm);
+      return kvota
+        ? `${e.name} (š) · ${st(urTeden[e.id] || 0)}/${st(kvota)} h teden`
+        : `${e.name} (š) · ${st(urTeden[e.id] || 0)} h teden`;
+    }
+    const p = preostanki[mesecDneva]?.[e.id];
+    if (!p) return e.name;
+    return p.ostane > 0
+      ? `${e.name} · ostane ${st(p.ostane)} h`
+      : `${e.name} · fond poln (${st(-p.ostane)} h čez)`;
+  }
 
   // Vrstice tabele: unija ključev smen čez teden, urejena po začetku.
   const vrstice = useMemo(() => {
@@ -668,11 +705,18 @@ export function Urnik({ session, config, meId, isAdmin }) {
                           );
                         }
 
-                        const prosti = employees.filter(
-                          (e) =>
-                            jeProsta(e.id, d, sh, nemorem, null, config) &&
-                            !krsiPocitek(e.id, d, sh.key, days, config)
-                        );
+                        // najprej tiste, ki jim do fonda ostane največ ur
+                        const ostanek = (e) =>
+                          e.kind === 'studentka'
+                            ? (Number(e.weeklyNorm) || 0) - (urTeden[e.id] || 0)
+                            : preostanki[d.slice(0, 7)]?.[e.id]?.ostane ?? 0;
+                        const prosti = employees
+                          .filter(
+                            (e) =>
+                              jeProsta(e.id, d, sh, nemorem, null, config) &&
+                              !krsiPocitek(e.id, d, sh.key, days, config)
+                          )
+                          .sort((a, b) => ostanek(b) - ostanek(a));
                         const zadrzani = employees.filter((e) => !prosti.includes(e));
                         return (
                           <td key={d} className={`cell ${konflikt ? 'konflikt' : ''}`}>
@@ -695,8 +739,7 @@ export function Urnik({ session, config, meId, isAdmin }) {
                               <optgroup label="Na voljo">
                                 {prosti.map((e) => (
                                   <option key={e.id} value={e.id}>
-                                    {e.name}
-                                    {e.kind === 'studentka' ? ' (š)' : ''}
+                                    {opisKandidata(e, d.slice(0, 7))}
                                   </option>
                                 ))}
                               </optgroup>
@@ -704,7 +747,7 @@ export function Urnik({ session, config, meId, isAdmin }) {
                                 <optgroup label="Ni priporočeno">
                                   {zadrzani.map((e) => (
                                     <option key={e.id} value={e.id}>
-                                      {e.name} ⚠
+                                      ⚠ {opisKandidata(e, d.slice(0, 7))}
                                     </option>
                                   ))}
                                 </optgroup>
@@ -720,6 +763,15 @@ export function Urnik({ session, config, meId, isAdmin }) {
               </table>
             </div>
           </div>
+
+          {isAdmin && (
+            <p className="muted" style={{ marginTop: 10 }}>
+              V spustnem seznamu piše, koliko ur osebi še ostane do mesečnega fonda
+              (pri študentkah do njene tedenske kvote). Seznam je urejen tako, da je
+              zgoraj tista, ki potrebuje največ ur. Če teden sega v dva meseca, se ure
+              štejejo v mesec, v katerega dan dejansko pade.
+            </p>
+          )}
 
           {skupaj.length > 0 && (
             <>
