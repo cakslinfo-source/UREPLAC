@@ -117,6 +117,38 @@ html.na-prijavi, body.na-prijavi { background: #020617; }
 .topbar .who { font-size: 12px; color: #cbd5e1; margin-top: 3px; font-weight: 600; }
 @media (max-width: 420px) { .topbar h1.kdo { font-size: 20px; } }
 
+/* kdo je zdaj na smeni */
+.card.nasmeni { border-color: var(--bg); border-width: 2px; }
+.nasmeni-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.zivo {
+  background: var(--delo-soft); color: var(--delo); border-radius: 999px;
+  padding: 3px 10px; font-size: 11px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .5px; white-space: nowrap;
+}
+.zivo::before { content: '●'; margin-right: 5px; animation: utrip 1.8s ease-in-out infinite; }
+.zivo.mini { padding: 1px 7px; font-size: 9px; }
+@keyframes utrip { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+@media (prefers-reduced-motion: reduce) { .zivo::before { animation: none } }
+
+.zdajlist { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.zdajrow {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fff;
+}
+.zdajrow.jaz { border-color: var(--brand); background: var(--brand-soft); }
+.zdajrow.mini { padding: 7px 10px; }
+.zdajrow.mini.koncana { opacity: .5; }
+.zdajrow.mini.tece { border-color: var(--delo); }
+.zdajpika { width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto; }
+.zdajkdo { flex: 1; min-width: 0; }
+.zdajkdo b { font-size: 15px; }
+.zdajrow.mini .zdajkdo b { font-size: 13px; }
+.zdajkdo .muted { font-size: 12px; }
+.zdajkdo .vloga { margin-left: 6px; }
+
+.danes { margin-top: 12px; }
+.danes summary { font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; }
+
 /* klepet */
 .card.klepet { border-color: #cbd5e1; }
 .badge { display: inline-block; margin-left: 8px; background: var(--brand); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: 12px; font-weight: 800; vertical-align: middle; }
