@@ -34,6 +34,8 @@ export async function POST(req) {
   if (!auth.ok || !auth.isAdmin) return unauthorized();
   try {
     const { name, password, kind, color, weeklyNorm, admin } = await req.json();
+    // Admin pravice lahko podeli samo super administrator.
+    if (admin === true && !auth.isSuper) return zaSuperAdmina();
     if (!name || !String(name).trim())
       return Response.json({ error: 'Manjka ime.' }, { status: 400 });
     if (!password || String(password).length < 4)
@@ -67,6 +69,8 @@ export async function PATCH(req) {
   if (!auth.ok || !auth.isAdmin) return unauthorized();
   try {
     const { id, name, password, active, kind, color, weeklyNorm, admin } = await req.json();
+    // Admin pravice lahko podeli ali odvzame samo super administrator.
+    if (typeof admin === 'boolean' && !auth.isSuper) return zaSuperAdmina();
     const list = await getEmployees();
     const emp = list.find((e) => e.id === id);
     if (!emp) return Response.json({ error: 'Zaposlena ni najdena.' }, { status: 404 });

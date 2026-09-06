@@ -1565,9 +1565,10 @@ function AdminZaposleni({ session, config }) {
                 >
                   {e.kind === 'studentka' ? '→ Zaposlena' : '→ Študentka'}
                 </button>
+                {session.isSuper && (
                 <button
                   className={e.admin ? 'btn sm' : 'btn sec sm'}
-                  title="Administrator ima enake pravice kot ti, razen menjave gesla super administratorja"
+                  title="Administrator ima enake pravice kot ti, razen podeljevanja admin pravic in menjave tvojega gesla"
                   onClick={() => {
                     if (
                       e.admin ||
@@ -1575,9 +1576,9 @@ function AdminZaposleni({ session, config }) {
                         `${e.name} bo dobila POLNE pravice administratorja:\n\n` +
                           '• ureja urnike, evidenco in nastavitve\n' +
                           '• dodaja, briše in ureja zaposlene\n' +
-                          '• vidi in spreminja gesla vseh zaposlenih\n' +
-                          '• lahko admin pravice da ali odvzame komu drugemu\n\n' +
-                          'Ne more le zamenjati gesla super administratorja.\n\nNadaljujem?'
+                          '• vidi in spreminja gesla vseh zaposlenih\n\n' +
+                          'NE more: dajati admin pravic drugim in menjati tvojega gesla ' +
+                          '– to ostaja samo pri tebi.\n\nNadaljujem?'
                       )
                     )
                       spremeni(e.id, { admin: !e.admin });
@@ -1585,6 +1586,7 @@ function AdminZaposleni({ session, config }) {
                 >
                   {e.admin ? 'Odvzemi admin' : 'Daj admin'}
                 </button>
+                )}
                 <button className="btn sec sm" onClick={() => novoGeslo(e)}>
                   Novo geslo
                 </button>

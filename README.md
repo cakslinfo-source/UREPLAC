@@ -15,12 +15,13 @@ Ista postavitev kot pri aplikaciji `delovne-ure-caks`.
 | Vloga | Prijava | Kaj sme |
 |---|---|---|
 | **Super administrator** (Luka Čakš) | zavihek *Super administrator* + geslo iz `ADMIN_PASSWORD` | vse: nastavitve, dodajanje/brisanje zaposlenih, gesla, dodeljevanje admin pravic, urniki, evidenca, klepet |
-| **Administrator** (npr. Ambrož) | kot zaposlena, s svojim imenom in geslom | vse isto kot super administrator: urniki, evidenca, nastavitve, dodajanje/brisanje zaposlenih, gesla, dodeljevanje admin pravic, arhiv klepeta. **Edino ne more** zamenjati gesla super administratorja |
+| **Administrator** (npr. Ambrož) | kot zaposlena, s svojim imenom in geslom | urniki, evidenca, nastavitve, dodajanje/brisanje zaposlenih, gesla zaposlenih, arhiv klepeta. **Ne more**: podeljevati ali odvzemati admin pravic in menjati gesla super administratorja |
 | **Zaposlena / študentka** | svoje ime + geslo | svoje ure, svoja razpoložljivost, urnik, klepet |
 
 Admin pravice se dodelijo v *Zaposleni* → gumb **Daj admin**; odvzamejo se z istim
-gumbom. Omejitev glede gesla super administratorja je preverjena na strežniku,
-ne le skrita v vmesniku.
+gumbom. Gumb vidi **samo super administrator** – administrator ga sploh ne dobi in
+tudi neposreden klic na strežnik je zavrnjen. Obe omejitvi sta preverjeni na
+strežniku, ne le skriti v vmesniku.
 
 > Geslo super administratorja je nastavljeno na `avi1991`. Zamenjaš ga v
 > *Nastavitve → Novo geslo super administratorja*; to polje vidi samo on.
