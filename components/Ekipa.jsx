@@ -87,6 +87,25 @@ const IZBIRE = [
   { key: 'nezapira', label: 'Ne morem zaključit' },
 ];
 
+/**
+ * Zasedenost dneva: koliko smen je treba pokriti in koliko ljudi je sploh
+ * na voljo (kdor ima označen cel dan, dopust ali bolniško, ne šteje).
+ */
+function zasedenostDneva(date, employees, nemorem, config) {
+  const smene = smeneZaDan(config, date);
+  const naVoljo = employees.filter((e) =>
+    smene.some((sh) => jeProsta(e.id, date, sh, nemorem, null, config))
+  );
+  const potrebno = smene.length;
+  return {
+    potrebno,
+    naVoljo: naVoljo.length,
+    manjka: Math.max(0, potrebno - naVoljo.length),
+    tesno: naVoljo.length <= potrebno,
+    kriticno: naVoljo.length < potrebno,
+  };
+}
+
 function DanRazpModal({ date, data, meId, isAdmin, config, onSet, onClose, busy }) {
   const { employees, nemorem } = data;
   const y = Number(date.slice(0, 4));
@@ -106,6 +125,31 @@ function DanRazpModal({ date, data, meId, isAdmin, config, onSet, onClose, busy 
           {DNEVI_DOLGO[weekdayIndex(y, m0, d)]}
           {praznik ? ` · ${praznik}` : ''}
         </p>
+
+        {(() => {
+          const z = zasedenostDneva(date, employees, nemorem, config);
+          if (z.kriticno) {
+            return (
+              <div className="err" style={{ marginTop: 0 }}>
+                <b>Ta dan je že tanko zaseden.</b> Pokriti je treba {z.potrebno} smen,
+                na voljo pa je samo {z.naVoljo} ljudi. Če se le da, izberi drug dan.
+              </div>
+            );
+          }
+          if (z.tesno) {
+            return (
+              <div className="ok" style={{ background: '#fef3c7', color: '#92400e', marginTop: 0 }}>
+                <b>Ta dan smo ravno pri številu</b> – {z.naVoljo} ljudi za {z.potrebno} smen.
+                Če odpadeš še ti, urnika za ta dan ne bo mogoče sestaviti.
+              </div>
+            );
+          }
+          return (
+            <p className="muted" style={{ marginTop: 0 }}>
+              Ta dan je na voljo {z.naVoljo} ljudi za {z.potrebno} smen.
+            </p>
+          );
+        })()}
 
         {meId && (
           <>
@@ -129,7 +173,9 @@ function DanRazpModal({ date, data, meId, isAdmin, config, onSet, onClose, busy 
           </>
         )}
 
-        {isAdmin && (
+        {meId && <hr className="sep" />}
+
+        <>
           <>
             <h3 style={{ margin: '0 0 8px' }}>Kdo lahko dela</h3>
             <div className="shiftlist">
@@ -177,7 +223,7 @@ function DanRazpModal({ date, data, meId, isAdmin, config, onSet, onClose, busy 
                 })}
             </div>
           </>
-        )}
+        </>
 
         <button className="btn sec full" style={{ marginTop: 16 }} onClick={onClose}>
           Zapri
@@ -254,7 +300,7 @@ export function Razpolozljivost({ session, meId, config }) {
       <p className="muted" style={{ marginTop: 0 }}>
         {isAdmin
           ? 'Pregled cele ekipe. Klikni na dan in vidiš, kdo lahko dela na kateri smeni.'
-          : 'Klikni na dan in označi, kdaj ne moreš delati. Vidiš samo svoje vnose - razloga ni treba pisati.'}
+          : 'Klikni na dan in označi, kdaj ne moreš delati. Vidiš tudi vnose sodelavk - preden se odjaviš, poglej, koliko jih ta dan že ne more. Razloga ni treba pisati.'}
       </p>
 
       {err && <div className="err">{err}</div>}
@@ -262,17 +308,16 @@ export function Razpolozljivost({ session, meId, config }) {
 
       {data && (
         <>
-          {isAdmin && (
-            <div className="legend">
-              {data.employees.map((e, i) => (
-                <span key={e.id} className="leg">
-                  <i style={{ background: barvaEmp(e, i) }} />
-                  {e.name}
-                  {e.kind === 'studentka' ? ' (š)' : ''}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="legend">
+            {data.employees.map((e, i) => (
+              <span key={e.id} className="leg">
+                <i style={{ background: barvaEmp(e, i) }} />
+                {e.name}
+                {e.kind === 'studentka' ? ' (š)' : ''}
+                {e.id === meId ? ' – jaz' : ''}
+              </span>
+            ))}
+          </div>
 
           <div className="calhead">
             {DNEVI_KRATKO.map((d) => (
@@ -290,43 +335,47 @@ export function Razpolozljivost({ session, meId, config }) {
               const odsotne = data.employees
                 .map((e, idx) => ({ e, idx, v: data.nemorem[e.id]?.[id] }))
                 .filter((x) => x.v);
+              const z = zasedenostDneva(id, data.employees, data.nemorem, config);
               const cls = [
                 'day',
                 isWeekend(year, month0, d) ? 'wknd' : '',
                 id === today ? 'today' : '',
+                z.kriticno ? 'kriticno' : z.tesno ? 'tesno' : '',
               ]
                 .filter(Boolean)
                 .join(' ');
               return (
                 <button key={id} type="button" className={cls} onClick={() => setPick(id)}>
-                  <span className="n">{d}</span>
+                  <span className="n">
+                    {d}
+                    {z.tesno && (
+                      <b className={`kvota ${z.kriticno ? 'crn' : ''}`}>
+                        {z.naVoljo}/{z.potrebno}
+                      </b>
+                    )}
+                  </span>
                   {hol && <span className="dot" />}
-                  {isAdmin ? (
-                    <span className="marks">
-                      {odsotne.slice(0, 6).map(({ e, idx, v }) => (
-                        <i
-                          key={e.id}
-                          title={`${e.name} – ${NEMOREM_LABEL[v]}`}
-                          className={`mark ${v}`}
-                          style={{ background: barvaEmp(e, idx) }}
-                        />
-                      ))}
-                      {odsotne.length > 6 && <i className="mark more">+</i>}
-                    </span>
-                  ) : (
-                    odsotne[0] && (
-                      <span className="tag t-nemorem">{NEMOREM_KRATKO[odsotne[0].v]}</span>
-                    )
-                  )}
+                  <span className="marks">
+                    {odsotne.slice(0, 8).map(({ e, idx, v }) => (
+                      <i
+                        key={e.id}
+                        title={`${e.name} – ${NEMOREM_LABEL[v]}`}
+                        className={`mark ${v} ${e.id === meId ? 'jaz' : ''}`}
+                        style={{ background: barvaEmp(e, idx) }}
+                      />
+                    ))}
+                    {odsotne.length > 8 && <i className="mark more">+</i>}
+                  </span>
                 </button>
               );
             })}
           </div>
 
           <p className="muted" style={{ marginTop: 10 }}>
-            {isAdmin
-              ? 'Polna pikica = cel dan · zgornja polovica = dopoldne · spodnja = popoldne · leva = ne odpira · desna = ne zapira. Miška nad pikico pokaže ime.'
-              : 'Dnevi brez oznake pomenijo, da si na voljo.'}
+            Vsaka ima svojo barvo (tvoja je obrobljena). Polna pikica = cel dan · zgornja
+            polovica = dopoldne · spodnja = popoldne · leva = ne odpira · desna = ne zapira.
+            Rdeča ali oranžna številka pri datumu pove, koliko ljudi je ta dan na voljo za
+            koliko smen – takrat se raje ne odjavljaj.
           </p>
         </>
       )}

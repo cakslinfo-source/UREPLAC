@@ -196,6 +196,14 @@ tfoot td { font-weight: 800; background: #f8fafc; }
 .mark.neodpira { border-radius: 50%; clip-path: inset(0 50% 0 0); width: 12px; }
 .mark.nezapira { border-radius: 50%; clip-path: inset(0 0 0 50%); width: 12px; }
 .mark.more { background: var(--line) !important; color: var(--muted); font-size: 9px; text-align: center; line-height: 11px; font-style: normal; width: auto; padding: 0 3px; border-radius: 4px; }
+.mark.jaz { box-shadow: 0 0 0 2px var(--bg); }
+
+/* dan, ki je že tanko zaseden */
+.day.tesno { background: #fffbeb; border-color: #fcd34d; }
+.day.kriticno { background: var(--bolniska-soft); border-color: var(--bolniska); }
+.day .n { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.kvota { font-size: 10px; font-weight: 800; color: #b45309; background: #fef3c7; border-radius: 5px; padding: 0 4px; }
+.kvota.crn { color: #fff; background: var(--bolniska); }
 
 .sep { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
 .t-nemorem { background: var(--dopust-soft); color: var(--dopust); }

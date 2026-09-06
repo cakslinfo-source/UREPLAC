@@ -25,11 +25,9 @@ export async function GET(req) {
     if (!month || !/^\d{4}-\d{2}$/.test(month))
       return Response.json({ error: 'Manjka ali napačen mesec.' }, { status: 400 });
 
-    // Zaposlena vidi samo svojo razpoložljivost; administrator vidi vse.
-    const vsi = (await getEmployees()).filter((e) => e.active !== false);
-    const employees = auth.isAdmin
-      ? vsi
-      : vsi.filter((e) => e.id === auth.employee.id);
+    // Razpoložljivost vidijo vse zaposlene, da se za isti dan ne odjavi
+    // preveč ljudi. Ureja pa lahko vsaka samo svojo (glej POST).
+    const employees = (await getEmployees()).filter((e) => e.active !== false);
     const nemorem = {};
 
     for (const e of employees) {
