@@ -143,6 +143,16 @@ function Login({ boot, onLogin, bootError, onReload }) {
     if (boot?.employees?.length && !empId) setEmpId(boot.employees[0].id);
   }, [boot, empId]);
 
+  // temno ozadje tudi pod prijavnim zaslonom
+  useEffect(() => {
+    document.body.classList.add('na-prijavi');
+    document.documentElement.classList.add('na-prijavi');
+    return () => {
+      document.body.classList.remove('na-prijavi');
+      document.documentElement.classList.remove('na-prijavi');
+    };
+  }, []);
+
   async function submit(e) {
     e.preventDefault();
     setErr('');
@@ -179,44 +189,46 @@ function Login({ boot, onLogin, bootError, onReload }) {
     }
   }
 
+  const izbrana = (boot?.employees || []).find((e) => e.id === empId);
+
   return (
-    <div className="wrap" style={{ maxWidth: 420, paddingTop: 40 }}>
-      <div className="card">
-        <h2 style={{ fontSize: 18 }}>{boot?.lokalName || 'Evidenca delovnih ur'}</h2>
-        <p className="muted" style={{ marginTop: -6 }}>
-          Prijavi se z geslom, ki ti ga je dal vodja.
-        </p>
+    <div className="login-bg">
+      <div className="login-card">
+        <img className="login-logo" src="/icon-512.png" alt="" />
+
+        <h1 className="login-name">{boot?.lokalName || 'Evidenca delovnih ur'}</h1>
+        <p className="login-sub">Evidenca ur in urniki</p>
 
         {bootError && (
-          <div className="err">
-            {bootError}{' '}
+          <div className="err" style={{ textAlign: 'left' }}>
+            {bootError}
             <button className="btn sm sec" onClick={onReload} style={{ marginTop: 8 }}>
               Poskusi znova
             </button>
           </div>
         )}
 
-        <div className="tabs" style={{ paddingBottom: 12 }}>
+        <div className="seg">
           <button
             type="button"
-            className={mode === 'employee' ? 'active' : ''}
+            className={mode === 'employee' ? 'on' : ''}
             onClick={() => setMode('employee')}
           >
             Zaposlena
           </button>
           <button
             type="button"
-            className={mode === 'admin' ? 'active' : ''}
+            className={mode === 'admin' ? 'on' : ''}
             onClick={() => setMode('admin')}
           >
-            Super administrator
+            Vodja
           </button>
         </div>
 
         <form onSubmit={submit}>
           {mode === 'employee' && (
             <label className="field">
-              <span>Ime</span>
+              <span>Kdo si?</span>
               <select value={empId} onChange={(e) => setEmpId(e.target.value)}>
                 {(boot?.employees || []).length === 0 && (
                   <option value="">Ni še dodanih zaposlenih</option>
@@ -236,15 +248,27 @@ function Login({ boot, onLogin, bootError, onReload }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
-              placeholder="Geslo"
+              placeholder="••••••"
             />
           </label>
           {err && <div className="err">{err}</div>}
-          <button className="btn full" disabled={busy || !password}>
-            {busy ? 'Prijavljam...' : 'Prijava'}
+          <button className="btn full big" disabled={busy || !password}>
+            {busy
+              ? 'Prijavljam ...'
+              : mode === 'employee' && izbrana
+              ? `Prijava – ${izbrana.name.split(' ')[0]}`
+              : 'Prijava'}
           </button>
         </form>
+
+        <p className="login-note">
+          {mode === 'employee'
+            ? 'Geslo ti da vodja. Če ga ne veš, vprašaj njega.'
+            : 'Prijava za super administratorja.'}
+        </p>
       </div>
+
+      <div className="login-foot">Plac Caffe · interna aplikacija</div>
     </div>
   );
 }

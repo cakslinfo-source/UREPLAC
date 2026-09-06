@@ -35,6 +35,70 @@ input, select, textarea { font-family: inherit; font-size: 16px; }
 
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 12px 64px; }
 
+/* ---- prijavni zaslon ---- */
+.login-bg {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 28px 16px 24px;
+  background:
+    radial-gradient(900px 420px at 50% -8%, rgba(190, 24, 41, .28), transparent 62%),
+    linear-gradient(180deg, #1e293b 0%, #0f172a 55%, #020617 100%);
+}
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 0 22px 24px;
+  box-shadow: 0 24px 60px rgba(2, 6, 23, .5);
+  text-align: center;
+}
+.login-logo {
+  width: 104px;
+  height: 104px;
+  border-radius: 24px;
+  object-fit: cover;
+  margin: -34px auto 12px;
+  display: block;
+  box-shadow: 0 10px 26px rgba(2, 6, 23, .35);
+  border: 3px solid #fff;
+  background: #fff;
+}
+.login-name { font-size: 21px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
+.login-sub { font-size: 13px; color: var(--muted); margin: 3px 0 18px; }
+.login-note { font-size: 12px; color: var(--muted); margin: 14px 0 0; line-height: 1.5; }
+.login-foot { color: #64748b; font-size: 11px; letter-spacing: .8px; text-transform: uppercase; font-weight: 700; }
+
+.seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: #f1f5f9;
+  border-radius: 11px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+.seg button {
+  background: transparent; border: 0; border-radius: 8px;
+  padding: 10px 6px; font-size: 14px; font-weight: 700; color: var(--muted);
+}
+.seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(15, 23, 42, .18); }
+
+.login-card label.field { text-align: left; }
+.login-card label.field span { font-weight: 600; }
+.login-card input, .login-card select { padding: 13px 12px; border-radius: 11px; }
+.btn.big { padding: 14px 16px; font-size: 16px; border-radius: 11px; margin-top: 4px; }
+/* gumb v barvi logotipa */
+.login-card .btn.big { background: #b3202f; }
+.login-card .btn.big:disabled { background: #94a3b8; }
+html.na-prijavi, body.na-prijavi { background: #020617; }
+
 /* ---- glava ---- */
 .topbar {
   background: var(--bg);
