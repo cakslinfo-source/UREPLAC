@@ -43,7 +43,7 @@ import {
 
 function authHeaders(session) {
   if (!session) return {};
-  if (session.isAdmin) return { 'x-admin-pass': session.adminPass };
+  if (session.isSuper) return { 'x-admin-pass': session.adminPass };
   return { 'x-emp-id': session.empId, 'x-emp-pass': session.empPass };
 }
 

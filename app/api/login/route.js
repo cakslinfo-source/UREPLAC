@@ -12,6 +12,8 @@ export async function POST(req) {
         return Response.json({
           ok: true,
           isAdmin: true,
+          isSuper: true,
+          name: cfg.superAdminName || 'Super administrator',
           config: { lokalName: cfg.lokalName, dailyNorm: cfg.dailyNorm },
         });
       }
@@ -28,7 +30,8 @@ export async function POST(req) {
     }
     return Response.json({
       ok: true,
-      isAdmin: false,
+      isAdmin: emp.admin === true,
+      isSuper: false,
       employee: publicEmployee(emp),
       config: { lokalName: cfg.lokalName, dailyNorm: cfg.dailyNorm },
     });

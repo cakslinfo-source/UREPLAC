@@ -5,6 +5,7 @@ import {
   publicEmployee,
   authFromRequest,
   unauthorized,
+  zaSuperAdmina,
 } from '@/lib/store';
 import { redisConfigured } from '@/lib/redis';
 
@@ -29,6 +30,7 @@ export async function GET() {
       weeklyNorm: cfg.weeklyNorm,
       shifts: cfg.shifts,
       shiftsByDay: cfg.shiftsByDay,
+      superAdminName: cfg.superAdminName,
       employees,
     });
   } catch (e) {
@@ -36,10 +38,11 @@ export async function GET() {
   }
 }
 
-// Sprememba nastavitev - samo administrator.
+// Sprememba nastavitev - samo super administrator.
 export async function PUT(req) {
   const auth = await authFromRequest(req);
-  if (!auth.ok || !auth.isAdmin) return unauthorized();
+  if (!auth.ok) return unauthorized();
+  if (!auth.isSuper) return zaSuperAdmina();
   try {
     const body = await req.json();
     const cfg = await getConfig();
@@ -48,6 +51,8 @@ export async function PUT(req) {
       next.lokalName = body.lokalName.trim();
     if (Number.isFinite(Number(body.dailyNorm)))
       next.dailyNorm = Math.max(1, Math.min(24, Number(body.dailyNorm)));
+    if (typeof body.superAdminName === 'string' && body.superAdminName.trim())
+      next.superAdminName = body.superAdminName.trim().slice(0, 60);
     if (Number.isFinite(Number(body.weeklyNorm)))
       next.weeklyNorm = Math.max(1, Math.min(60, Number(body.weeklyNorm)));
     const ocisti = (arr) =>

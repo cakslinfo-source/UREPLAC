@@ -10,6 +10,29 @@ Ista postavitev kot pri aplikaciji `delovne-ure-caks`.
 
 ---
 
+## Vloge
+
+| Vloga | Prijava | Kaj sme |
+|---|---|---|
+| **Super administrator** (Luka Čakš) | zavihek *Super administrator* + geslo iz `ADMIN_PASSWORD` | vse: nastavitve, dodajanje/brisanje zaposlenih, gesla, dodeljevanje admin pravic, urniki, evidenca, klepet |
+| **Administrator** (npr. Ambrož) | kot zaposlena, s svojim imenom in geslom | ureja in objavlja urnike, vidi razpoložljivost in evidenco vseh, arhivira sporočila. **Ne more** v nastavitve, dodajati ali brisati zaposlenih, spreminjati gesel ali deliti admin pravic |
+| **Zaposlena / študentka** | svoje ime + geslo | svoje ure, svoja razpoložljivost, urnik, klepet |
+
+Admin pravice se dodelijo v *Zaposleni* → gumb **Daj admin**. Odvzamejo se z istim
+gumbom. To lahko naredi samo super administrator, in vsaka od teh omejitev je
+preverjena na strežniku, ne le skrita v vmesniku.
+
+Na vrhu vsakega zaslona je z veliko izpisano **ime prijavljene osebe** in njena
+vloga, da se takoj vidi, ali je prijavljena prava oseba.
+
+## Klepet
+
+Na prvi strani (*Moje ure*) in v svojem zavihku je **klepet** za cel lokal.
+Vsaka lahko napiše, če kaj potrebuje; vidijo ga vse. Administrator in super
+administrator lahko sporočilo dasta **V arhiv** – takrat izgine iz seznama,
+ostane pa dosegljivo pod gumbom *Arhiv* in ga je mogoče vrniti nazaj.
+Klepet se sam osveži vsakih 20 sekund.
+
 ## Kaj aplikacija zna
 
 **Zaposlena**
@@ -163,6 +186,8 @@ Aplikacija se potem obnaša kot ikona na telefonu.
 | `lokal:entries:<idZaposlene>:<YYYY-MM>` | vnosi enega meseca ene zaposlene + zaklep |
 | `lokal:nemorem:<idZaposlene>:<YYYY-MM>` | dnevi, ko ne more delati (`ves`/`dop`/`pop`/`neodpira`/`nezapira`) |
 | `lokal:urnik:<YYYY-MM>` | urnik meseca po dnevih in smenah + objavljeni tedni |
+| `lokal:klepet` | seznam sporočil klepeta (zadnjih 500) |
+| `lokal:klepet:arhiv` | id-ji arhiviranih sporočil |
 
 Vsaka zaposlena ima svoj ključ za vsak mesec, zato se vnosi različnih zaposlenih ne
 morejo povoziti, tudi če vpisujejo hkrati.

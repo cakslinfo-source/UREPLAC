@@ -21,6 +21,7 @@ import {
   prazniciNaDelovniDan,
 } from '@/lib/datum';
 import { Razpolozljivost, Urnik } from '@/components/Ekipa';
+import Klepet from '@/components/Klepet';
 import {
   PRIVZETE_SMENE,
   PRIVZETE_SMENE_PO_DNEVIH,
@@ -64,7 +65,7 @@ function storeSession(s) {
 
 function authHeaders(session) {
   if (!session) return {};
-  if (session.isAdmin) return { 'x-admin-pass': session.adminPass };
+  if (session.isSuper) return { 'x-admin-pass': session.adminPass };
   return { 'x-emp-id': session.empId, 'x-emp-pass': session.empPass };
 }
 
@@ -153,9 +154,16 @@ function Login({ boot, onLogin, bootError, onReload }) {
       });
       onLogin(
         mode === 'admin'
-          ? { isAdmin: true, adminPass: password, name: 'Administrator' }
+          ? {
+              isAdmin: true,
+              isSuper: true,
+              adminPass: password,
+              name: data.name || 'Super administrator',
+              kind: 'super',
+            }
           : {
-              isAdmin: false,
+              isAdmin: data.employee.admin === true,
+              isSuper: false,
               empId,
               empPass: password,
               name: data.employee.name,
@@ -201,7 +209,7 @@ function Login({ boot, onLogin, bootError, onReload }) {
             className={mode === 'admin' ? 'active' : ''}
             onClick={() => setMode('admin')}
           >
-            Administrator
+            Super administrator
           </button>
         </div>
 
@@ -568,14 +576,26 @@ function DopustModal({ onClose, onSave, busy }) {
 
 function ZaposlenaPogled({ session, config }) {
   const [tab, setTab] = useState('mesec');
+  const jeAdmin = session.isAdmin === true;
+
+  const zavihki = [
+    ['mesec', 'Moje ure'],
+    ['urnik', 'Urnik'],
+    ['razp', 'Kdaj ne morem'],
+    ['klepet', 'Klepet'],
+    ...(jeAdmin
+      ? [
+          ['evidenca', 'Evidenca / izpis'],
+          ['pregled', 'Pregled meseca'],
+          ['dopusti', 'Napovedani dopusti'],
+        ]
+      : []),
+  ];
+
   return (
     <div className="wrap">
       <div className="tabs noprint">
-        {[
-          ['mesec', 'Moje ure'],
-          ['urnik', 'Urnik'],
-          ['razp', 'Kdaj ne morem'],
-        ].map(([k, l]) => (
+        {zavihki.map(([k, l]) => (
           <button key={k} className={tab === k ? 'active' : ''} onClick={() => setTab(k)}>
             {l}
           </button>
@@ -583,11 +603,17 @@ function ZaposlenaPogled({ session, config }) {
       </div>
       {tab === 'mesec' && <ZaposlenaMesec session={session} config={config} />}
       {tab === 'urnik' && (
-        <Urnik session={session} config={config} meId={session.empId} isAdmin={false} />
+        <Urnik session={session} config={config} meId={session.empId} isAdmin={jeAdmin} />
       )}
       {tab === 'razp' && (
         <Razpolozljivost session={session} meId={session.empId} config={config} />
       )}
+      {tab === 'klepet' && (
+        <Klepet session={session} meId={session.empId} isAdmin={jeAdmin} />
+      )}
+      {tab === 'evidenca' && jeAdmin && <AdminEvidenca session={session} config={config} />}
+      {tab === 'pregled' && jeAdmin && <AdminPregled session={session} config={config} />}
+      {tab === 'dopusti' && jeAdmin && <AdminDopusti session={session} />}
     </div>
   );
 }
@@ -759,6 +785,12 @@ function ZaposlenaMesec({ session, config }) {
         busy={busy}
         locked={doc.locked}
         onSave={shraniVnos}
+      />
+      <Klepet
+        session={session}
+        meId={session.empId}
+        isAdmin={session.isAdmin === true}
+        naslov="Klepet – če kaj potrebuješ"
       />
       <div className="card">
         <div className="monthnav">
@@ -939,6 +971,7 @@ function AdminPogled({ session, config, setConfig }) {
         {[
           ['urnik', 'Urnik'],
           ['razp', 'Razpoložljivost'],
+          ['klepet', 'Klepet'],
           ['evidenca', 'Evidenca / izpis'],
           ['pregled', 'Pregled meseca'],
           ['dopusti', 'Napovedani dopusti'],
@@ -954,6 +987,7 @@ function AdminPogled({ session, config, setConfig }) {
         <Urnik session={session} config={config} meId={null} isAdmin={true} />
       )}
       {tab === 'razp' && <Razpolozljivost session={session} meId={null} config={config} />}
+      {tab === 'klepet' && <Klepet session={session} meId="super" isAdmin={true} />}
       {tab === 'evidenca' && <AdminEvidenca session={session} config={config} />}
       {tab === 'pregled' && <AdminPregled session={session} config={config} />}
       {tab === 'dopusti' && <AdminDopusti session={session} />}
@@ -1491,7 +1525,8 @@ function AdminZaposleni({ session, config }) {
                 <b style={{ opacity: e.active === false ? 0.5 : 1 }}>{e.name}</b>
                 {e.active === false && <span className="muted"> · neaktivna</span>}
                 <div className="muted">
-                  {e.kind === 'studentka' ? 'Študentka' : 'Zaposlena'} · Geslo:{' '}
+                  {e.kind === 'studentka' ? 'Študentka' : 'Zaposlena'}
+                  {e.admin && <b style={{ color: 'var(--brand)' }}> · administrator</b>} · Geslo:{' '}
                   {pokaziGesla ? e.password : '••••••'}
                 </div>
                 <UrTedenPolje
@@ -1522,6 +1557,26 @@ function AdminZaposleni({ session, config }) {
                 >
                   {e.kind === 'studentka' ? '→ Zaposlena' : '→ Študentka'}
                 </button>
+                <button
+                  className={e.admin ? 'btn sm' : 'btn sec sm'}
+                  title="Administrator lahko ureja urnike in evidenco, ne more pa v nastavitve ali dodajati zaposlenih"
+                  onClick={() => {
+                    if (
+                      e.admin ||
+                      confirm(
+                        `${e.name} bo dobila pravice administratorja:\n\n` +
+                          '• ureja tedenske urnike in jih objavlja\n' +
+                          '• vidi evidenco in ure vseh\n' +
+                          '• arhivira sporočila v klepetu\n\n' +
+                          'NE more: v nastavitve, dodajati ali brisati zaposlenih, ' +
+                          'spreminjati gesel ali deliti admin pravic.\n\nNadaljujem?'
+                      )
+                    )
+                      spremeni(e.id, { admin: !e.admin });
+                  }}
+                >
+                  {e.admin ? 'Odvzemi admin' : 'Daj admin'}
+                </button>
                 <button className="btn sec sm" onClick={() => novoGeslo(e)}>
                   Novo geslo
                 </button>
@@ -1547,6 +1602,7 @@ function AdminNastavitve({ session, config, setConfig }) {
   const [lokalName, setLokalName] = useState(config.lokalName || '');
   const [dailyNorm, setDailyNorm] = useState(String(config.dailyNorm || 8));
   const [adminPassword, setAdminPassword] = useState('');
+  const [superAdminName, setSuperAdminName] = useState(config.superAdminName || 'Luka Čakš');
   const [weeklyNorm, setWeeklyNorm] = useState(String(config.weeklyNorm || 40));
   const [dan, setDan] = useState(0);
   const [shiftsByDay, setShiftsByDay] = useState(() => {
@@ -1620,6 +1676,7 @@ function AdminNastavitve({ session, config, setConfig }) {
     try {
       const body = {
         lokalName,
+        superAdminName,
         dailyNorm: Number(dailyNorm),
         weeklyNorm: Number(weeklyNorm),
         shifts: shiftsByDay[0],
@@ -1630,6 +1687,7 @@ function AdminNastavitve({ session, config, setConfig }) {
       setConfig({
         ...config,
         lokalName,
+        superAdminName,
         dailyNorm: Number(dailyNorm),
         weeklyNorm: Number(weeklyNorm),
         shifts: shiftsByDay[0],
@@ -1656,6 +1714,10 @@ function AdminNastavitve({ session, config, setConfig }) {
         <label className="field">
           <span>Ime lokala (prikazano v glavi in na izpisu)</span>
           <input value={lokalName} onChange={(e) => setLokalName(e.target.value)} />
+        </label>
+        <label className="field">
+          <span>Ime super administratorja (prikazano ob prijavi)</span>
+          <input value={superAdminName} onChange={(e) => setSuperAdminName(e.target.value)} />
         </label>
         <label className="field">
           <span>Dnevna norma ur (za dopust in bolniško)</span>
@@ -1767,6 +1829,12 @@ function AdminNastavitve({ session, config, setConfig }) {
    Korenska komponenta
    ===================================================================== */
 
+function vlogaOznaka(session) {
+  if (session.isSuper) return 'Super administrator';
+  const osnova = session.kind === 'studentka' ? 'Študentka' : 'Zaposlena';
+  return session.isAdmin ? `${osnova} · administrator` : osnova;
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [ready, setReady] = useState(false);
@@ -1774,6 +1842,7 @@ export default function App() {
   const [bootError, setBootError] = useState('');
   const [config, setConfig] = useState({
     lokalName: '',
+    superAdminName: 'Luka Čakš',
     dailyNorm: 8,
     weeklyNorm: 40,
     shifts: PRIVZETE_SMENE,
@@ -1788,6 +1857,7 @@ export default function App() {
       setConfig((c) => ({
         ...c,
         lokalName: d.lokalName,
+        superAdminName: d.superAdminName || c.superAdminName,
         dailyNorm: d.dailyNorm,
         weeklyNorm: d.weeklyNorm || c.weeklyNorm,
         shifts: d.shifts && d.shifts.length ? d.shifts : c.shifts,
@@ -1830,16 +1900,15 @@ export default function App() {
     <>
       <div className="topbar noprint">
         <div>
-          <h1>{config.lokalName || 'Evidenca delovnih ur'}</h1>
-          <div className="who">
-            {session.isAdmin ? 'Administrator' : session.name}
-          </div>
+          <div className="lokal">{config.lokalName || 'Evidenca delovnih ur'}</div>
+          <h1 className="kdo">{session.name}</h1>
+          <div className="who">{vlogaOznaka(session)}</div>
         </div>
         <button className="linkbtn" onClick={odjava}>
           Odjava
         </button>
       </div>
-      {session.isAdmin ? (
+      {session.isSuper ? (
         <AdminPogled session={session} config={config} setConfig={setConfig} />
       ) : (
         <ZaposlenaPogled session={session} config={config} />
