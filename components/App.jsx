@@ -574,7 +574,7 @@ function DopustModal({ onClose, onSave, busy }) {
    Pogled zaposlene
    ===================================================================== */
 
-function ZaposlenaPogled({ session, config }) {
+function ZaposlenaPogled({ session, config, setConfig }) {
   const [tab, setTab] = useState('mesec');
   const jeAdmin = session.isAdmin === true;
 
@@ -588,6 +588,8 @@ function ZaposlenaPogled({ session, config }) {
           ['evidenca', 'Evidenca / izpis'],
           ['pregled', 'Pregled meseca'],
           ['dopusti', 'Napovedani dopusti'],
+          ['zaposleni', 'Zaposleni'],
+          ['nastavitve', 'Nastavitve'],
         ]
       : []),
   ];
@@ -614,6 +616,12 @@ function ZaposlenaPogled({ session, config }) {
       {tab === 'evidenca' && jeAdmin && <AdminEvidenca session={session} config={config} />}
       {tab === 'pregled' && jeAdmin && <AdminPregled session={session} config={config} />}
       {tab === 'dopusti' && jeAdmin && <AdminDopusti session={session} />}
+      {tab === 'zaposleni' && jeAdmin && (
+        <AdminZaposleni session={session} config={config} />
+      )}
+      {tab === 'nastavitve' && jeAdmin && (
+        <AdminNastavitve session={session} config={config} setConfig={setConfig} />
+      )}
     </div>
   );
 }
@@ -1559,17 +1567,17 @@ function AdminZaposleni({ session, config }) {
                 </button>
                 <button
                   className={e.admin ? 'btn sm' : 'btn sec sm'}
-                  title="Administrator lahko ureja urnike in evidenco, ne more pa v nastavitve ali dodajati zaposlenih"
+                  title="Administrator ima enake pravice kot ti, razen menjave gesla super administratorja"
                   onClick={() => {
                     if (
                       e.admin ||
                       confirm(
-                        `${e.name} bo dobila pravice administratorja:\n\n` +
-                          '• ureja tedenske urnike in jih objavlja\n' +
-                          '• vidi evidenco in ure vseh\n' +
-                          '• arhivira sporočila v klepetu\n\n' +
-                          'NE more: v nastavitve, dodajati ali brisati zaposlenih, ' +
-                          'spreminjati gesel ali deliti admin pravic.\n\nNadaljujem?'
+                        `${e.name} bo dobila POLNE pravice administratorja:\n\n` +
+                          '• ureja urnike, evidenco in nastavitve\n' +
+                          '• dodaja, briše in ureja zaposlene\n' +
+                          '• vidi in spreminja gesla vseh zaposlenih\n' +
+                          '• lahko admin pravice da ali odvzame komu drugemu\n\n' +
+                          'Ne more le zamenjati gesla super administratorja.\n\nNadaljujem?'
                       )
                     )
                       spremeni(e.id, { admin: !e.admin });
@@ -1806,15 +1814,21 @@ function AdminNastavitve({ session, config, setConfig }) {
           </button>
         </div>
 
-        <label className="field" style={{ marginTop: 16 }}>
-          <span>Novo geslo administratorja (pusti prazno, če ga ne spreminjaš)</span>
-          <input
-            type="text"
-            value={adminPassword}
-            onChange={(e) => setAdminPassword(e.target.value)}
-            placeholder="vsaj 4 znaki"
-          />
-        </label>
+        {session.isSuper ? (
+          <label className="field" style={{ marginTop: 16 }}>
+            <span>Novo geslo super administratorja (pusti prazno, če ga ne spreminjaš)</span>
+            <input
+              type="text"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="vsaj 4 znaki"
+            />
+          </label>
+        ) : (
+          <p className="muted" style={{ marginTop: 16 }}>
+            Geslo super administratorja lahko zamenja samo on sam.
+          </p>
+        )}
         {err && <div className="err">{err}</div>}
         {msg && <div className="ok">{msg}</div>}
         <button className="btn" disabled={busy}>
@@ -1911,7 +1925,7 @@ export default function App() {
       {session.isSuper ? (
         <AdminPogled session={session} config={config} setConfig={setConfig} />
       ) : (
-        <ZaposlenaPogled session={session} config={config} />
+        <ZaposlenaPogled session={session} config={config} setConfig={setConfig} />
       )}
     </>
   );

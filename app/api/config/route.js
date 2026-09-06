@@ -38,11 +38,11 @@ export async function GET() {
   }
 }
 
-// Sprememba nastavitev - samo super administrator.
+// Nastavitve ureja administrator; geslo super administratorja pa lahko
+// zamenja samo super administrator sam.
 export async function PUT(req) {
   const auth = await authFromRequest(req);
-  if (!auth.ok) return unauthorized();
-  if (!auth.isSuper) return zaSuperAdmina();
+  if (!auth.ok || !auth.isAdmin) return unauthorized();
   try {
     const body = await req.json();
     const cfg = await getConfig();
@@ -72,8 +72,10 @@ export async function PUT(req) {
       const po = body.shiftsByDay.map((dan) => (Array.isArray(dan) ? ocisti(dan) : []));
       if (po.every((dan) => dan.length)) next.shiftsByDay = po;
     }
-    if (typeof body.adminPassword === 'string' && body.adminPassword.length >= 4)
+    if (typeof body.adminPassword === 'string' && body.adminPassword.length >= 4) {
+      if (!auth.isSuper) return zaSuperAdmina();
       next.adminPassword = body.adminPassword;
+    }
     await saveConfig(next);
     return Response.json({ ok: true, config: { ...next, adminPassword: undefined } });
   } catch (e) {

@@ -20,9 +20,8 @@ export async function GET(req) {
   const auth = await authFromRequest(req);
   if (!auth.ok || !auth.isAdmin) return unauthorized();
   try {
-    const list = await getEmployees();
     return Response.json({
-      employees: auth.isSuper ? list : list.map(publicEmployee),
+      employees: await getEmployees(),
       isSuper: auth.isSuper,
     });
   } catch (e) {
@@ -32,8 +31,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   const auth = await authFromRequest(req);
-  if (!auth.ok) return unauthorized();
-  if (!auth.isSuper) return zaSuperAdmina();
+  if (!auth.ok || !auth.isAdmin) return unauthorized();
   try {
     const { name, password, kind, color, weeklyNorm, admin } = await req.json();
     if (!name || !String(name).trim())
@@ -66,8 +64,7 @@ export async function POST(req) {
 
 export async function PATCH(req) {
   const auth = await authFromRequest(req);
-  if (!auth.ok) return unauthorized();
-  if (!auth.isSuper) return zaSuperAdmina();
+  if (!auth.ok || !auth.isAdmin) return unauthorized();
   try {
     const { id, name, password, active, kind, color, weeklyNorm, admin } = await req.json();
     const list = await getEmployees();
@@ -91,8 +88,7 @@ export async function PATCH(req) {
 
 export async function DELETE(req) {
   const auth = await authFromRequest(req);
-  if (!auth.ok) return unauthorized();
-  if (!auth.isSuper) return zaSuperAdmina();
+  if (!auth.ok || !auth.isAdmin) return unauthorized();
   try {
     const id = new URL(req.url).searchParams.get('id');
     const list = await getEmployees();
